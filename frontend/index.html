@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureVault LAN - Encrypted Transport &amp; Visual Protocol</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300ff88'%3E%3Cpath d='M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css?v=3.0">
+</head>
+<body class="theme-cyber-dark">
+
+  <!-- Interactive Liquid Mouse Glow Follower -->
+  <div class="cursor-liquid-glow" id="cursorGlow"></div>
+
+  <!-- Liquid Ambient Background Glows -->
+  <div class="ambient-glow orb-1"></div>
+  <div class="ambient-glow orb-2"></div>
+  <div class="ambient-glow orb-3"></div>
+  <div class="ambient-glow orb-4"></div>
+
+  <div class="app-container">
+    
+    <!-- Top HUD Navigation -->
+    <header class="glass-header">
+      <div class="logo-group">
+        <div class="shield-badge">
+          <svg viewBox="0 0 24 24" class="shield-icon" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="logo-title">SECUREVAULT <span class="neon-text">LAN</span></h1>
+          <p class="logo-subtitle">HYBRID CRYPTO TRANSPORT &amp; WIRESHARK PROTOCOL INSPECTOR</p>
+        </div>
+      </div>
+
+      <!-- Live System Status Badge (HCI Heuristic #1) -->
+      <div class="header-status-box">
+        <div class="status-indicator" id="statusIndicator">
+          <span class="status-ping-ring"></span>
+          <span class="status-dot"></span>
+        </div>
+        <div class="status-meta">
+          <span class="status-label" id="statusText">SYSTEM IDLE</span>
+          <span class="status-sub" id="peerText">NO ACTIVE PEER</span>
+        </div>
+      </div>
+
+      <!-- Security Mode Switcher (Wireshark Demonstration Hero Toggle) -->
+      <div class="security-toggle-container">
+        <label class="toggle-switch">
+          <input type="checkbox" id="securityModeToggle" checked>
+          <span class="toggle-slider">
+            <span class="toggle-knob"></span>
+          </span>
+        </label>
+        <div class="toggle-label-box">
+          <span class="mode-title" id="modeTitle">&#x1F510; AES-256-GCM SECURE</span>
+          <span class="mode-desc" id="modeDesc">Ciphertext Payload Active</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero Section: Dynamic 60FPS Data Traveling Pipeline Canvas -->
+    <section class="pipeline-section glass-panel">
+      <div class="pipeline-header">
+        <div class="pipeline-title">
+          <span class="pulse-icon"></span>
+          LIVE LAN TRANSMISSION PIPELINE &amp; DATA STREAM
+          <div class="cyber-spectrum">
+            <span class="spec-bar"></span>
+            <span class="spec-bar"></span>
+            <span class="spec-bar"></span>
+            <span class="spec-bar"></span>
+            <span class="spec-bar"></span>
+          </div>
+        </div>
+        <div class="pipeline-telemetry" id="pipelineTelemetry">
+          IDLE &bull; READY FOR DATA INJECTION
+        </div>
+      </div>
+      <div class="canvas-wrapper">
+        <canvas id="packetCanvas"></canvas>
+      </div>
+    </section>
+
+    <!-- Main Workspace 3-Column Grid -->
+    <main class="dashboard-grid">
+      
+      <!-- COLUMN 1: LAN Node Control & Crypto Vault Status -->
+      <section class="grid-card glass-panel" id="controlPanel">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">&#x26A1;</span> NODE CONTROLLER
+          </div>
+          <span class="badge-pill" id="localIpBadge">IP: Detecting...</span>
+        </div>
+
+        <!-- Role Selector Tabs (FIX BUG-016: proper tab structure) -->
+        <div class="role-tabs">
+          <button class="tab-btn active" id="tabServer" onclick="switchRole('server')">
+            <span class="tab-icon">&#x1F5A7;</span>
+            <span class="tab-label">HOST SERVER</span>
+          </button>
+          <button class="tab-btn" id="tabClient" onclick="switchRole('client')">
+            <span class="tab-icon">&#x1F517;</span>
+            <span class="tab-label">CONNECT CLIENT</span>
+          </button>
+        </div>
+
+        <!-- Connection Parameters Form -->
+        <div class="form-group" id="ipFieldGroup" style="display: none;">
+          <label class="input-label">REMOTE SERVER IP</label>
+          <input type="text" id="targetIpInput" class="glass-input" value="127.0.0.1" placeholder="e.g. 192.168.1.15">
+        </div>
+
+        <div class="form-group">
+          <label class="input-label">LAN PORT (TCP)</label>
+          <input type="number" id="portInput" class="glass-input" value="5500" min="1024" max="65535">
+        </div>
+
+        <button id="actionBtn" class="glow-button primary-btn" onclick="handlePrimaryAction()">
+          <span class="btn-shimmer"></span>
+          <span class="btn-text">INITIALIZE SECURE SERVER</span>
+        </button>
+
+        <!-- Cryptographic Telemetry Card -->
+        <div class="crypto-meta-card">
+          <div class="crypto-meta-title">&#x1F512; CRYPTOGRAPHIC LAYER</div>
+          
+          <div class="meta-row">
+            <span class="meta-key">Key Exchange:</span>
+            <span class="meta-val neon-accent">RSA-2048 (OAEP-SHA256)</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">Data Cipher:</span>
+            <span class="meta-val neon-accent" id="activeCipherLabel">AES-256-GCM (Authenticated)</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">File Integrity:</span>
+            <span class="meta-val neon-accent">SHA-256 Checksum</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">Session Key:</span>
+            <!-- FIX BUG-007: element ID corrected to match JS reference -->
+            <span class="meta-val monospace-val" id="sessionFpVal">NOT NEGOTIATED</span>
+          </div>
+        </div>
+
+        <!-- Wireshark Demo Guide Pill -->
+        <div class="demo-hint-box">
+          <div class="hint-title">&#x1F4A1; WIRESHARK DEMO TIP</div>
+          <p class="hint-text">Filter: <code>tcp.port == 5500</code>. Toggle above switch to Plaintext to inspect cleartext packets!</p>
+        </div>
+      </section>
+
+      <!-- COLUMN 2: Secure Chat & File Transfer Vault -->
+      <section class="grid-card glass-panel" id="transferVault">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">&#x1F4AC;</span> SECURE MESSAGING &amp; FILE VAULT
+          </div>
+          <span class="badge-pill" id="vaultStatusBadge">STANDBY</span>
+        </div>
+
+        <!-- Chat Conversation Area -->
+        <div class="chat-viewport" id="chatViewport">
+          <div class="empty-chat-placeholder">
+            <div class="placeholder-icon">&#x1F6E1;&#xFE0F;</div>
+            <div>Start server or connect to peer to begin encrypted transmission.</div>
+          </div>
+        </div>
+
+        <!-- Message Input Row -->
+        <div class="chat-input-bar">
+          <input type="text" id="chatInput" class="glass-input chat-input" placeholder="Type secret message..." onkeypress="handleChatKeyPress(event)">
+          <button class="glow-button mini-btn" onclick="sendMessage()">
+            <span>SEND</span>
+          </button>
+        </div>
+
+        <!-- File Transfer Vessel & Dropzone -->
+        <div class="file-transfer-box">
+          <!-- FIX BUG-009: guard click with connection check via JS -->
+          <div class="file-dropzone" id="fileDropzone" onclick="triggerFileInput()">
+            <input type="file" id="fileInputEl" style="display: none;" onchange="handleFileSelected(event)">
+            <div class="drop-icon">&#x1F4C1;</div>
+            <div class="drop-title" id="dropTitle">DROP CONFIDENTIAL FILE OR CLICK TO BROWSE</div>
+            <div class="drop-sub" id="dropSub">AES-256 Encrypted Chunk Streaming with SHA-256 Integrity Verification</div>
+          </div>
+
+          <!-- Liquid Wave Progress Vessel -->
+          <div class="liquid-progress-container" id="progressVessel" style="display: none;">
+            <div class="progress-info-row">
+              <span class="prog-file-name" id="progFileName">document.pdf</span>
+              <span class="prog-percentage" id="progPercentage">0%</span>
+            </div>
+            <div class="progress-track">
+              <div class="liquid-wave-fill" id="liquidWaveFill"></div>
+            </div>
+            <div class="progress-bytes-meta" id="progBytesMeta">0 / 0 KB</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- COLUMN 3: Live Security Audit & Raw Hex Stream -->
+      <section class="grid-card glass-panel" id="auditPanel">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">&#x1F52C;</span> LIVE SECURITY AUDIT &amp; HEX TELEMETRY
+          </div>
+          <button class="ghost-btn" onclick="clearAuditLog()">CLEAR</button>
+        </div>
+
+        <!-- Raw Cryptogram Inspector -->
+        <div class="hex-stream-container" id="hexStream">
+          <div class="hex-line system-line">[SYSTEM] Cryptographic engine initialized and waiting for socket events...</div>
+        </div>
+
+        <!-- Integrity Verification Banner -->
+        <div class="integrity-card" id="integrityCard">
+          <div class="integrity-header">
+            <span class="shield-mini">&#x1F6E1;&#xFE0F;</span>
+            <span id="integrityStatusText">INTEGRITY GUARD ACTIVE</span>
+          </div>
+          <div class="integrity-body" id="integrityBody">
+            Packets guarded with 128-bit AES-GCM Authentication Tags &amp; SHA-256 Checksums.
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="/static/app.js?v=3.0"></script>
+</body>
+</html>
