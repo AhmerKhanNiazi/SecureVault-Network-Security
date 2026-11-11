@@ -22,8 +22,8 @@ import asyncio
 import socket
 import threading
 from contextlib import asynccontextmanager
-from typing import Set, Dict, Any, Optional
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Response
+from typing import Set, Dict, Any, Optional, List
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Response, File, UploadFile
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -142,6 +142,38 @@ def sync_broadcast(event_type: str, data: Dict[str, Any]):
     global loop
     if loop and loop.is_running():
         asyncio.run_coroutine_threadsafe(broadcast_to_ui(event_type, data), loop)
+
+
+def pick_file_native() -> Optional[str]:
+    """Opens native Windows File Dialog to bypass browser fakepath restrictions."""
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        fpath = filedialog.askopenfilename(title="Select File to Encrypt & Stream")
+        root.destroy()
+        return fpath if fpath else None
+    except Exception as e:
+        print(f"[BRIDGE] Native file dialog error: {e}")
+        return None
+
+
+def pick_multi_files_native() -> list:
+    """Opens native Windows Multi-File Dialog for Vault staging."""
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        fpaths = list(filedialog.askopenfilenames(title="Select Multiple Files for Vault Distribution"))
+        root.destroy()
+        return fpaths
+    except Exception as e:
+        print(f"[BRIDGE] Native multi-file dialog error: {e}")
+        return []
 
 
 # ---------------------------------------------------------------------------
@@ -292,6 +324,32 @@ async def websocket_endpoint(websocket: WebSocket):
                         "data": {"level": "ERROR", "msg": f"File not found: {filepath}"}
                     }))
 
+            elif action == "pick_and_send_file":
+                if not node.is_connected:
+                    await websocket.send_text(json.dumps({
+                        "event": "log",
+                        "data": {"level": "ERROR", "msg": "Cannot send file: No active peer connection."}
+                    }))
+                else:
+                    def _picker_worker():
+                        fpath = pick_file_native()
+                        if fpath and os.path.exists(fpath):
+                            node.send_file(fpath)
+                    threading.Thread(target=_picker_worker, daemon=True).start()
+
+            elif action == "pick_and_share_multi":
+                if not node.is_connected:
+                    await websocket.send_text(json.dumps({
+                        "event": "log",
+                        "data": {"level": "ERROR", "msg": "Cannot share vault: No active peer connection."}
+                    }))
+                else:
+                    def _multi_picker_worker():
+                        fpaths = pick_multi_files_native()
+                        if fpaths:
+                            node.share_multi_files(fpaths)
+                    threading.Thread(target=_multi_picker_worker, daemon=True).start()
+
             elif action == "disconnect":
                 node.disconnect()
 
@@ -335,6 +393,48 @@ async def websocket_endpoint(websocket: WebSocket):
         pass
     finally:
         _ws_remove(websocket)
+
+
+# ---------------------------------------------------------------------------
+# Direct File Upload Endpoints (Eliminates Browser C:\fakepath Sandbox Restrictions)
+# ---------------------------------------------------------------------------
+@app.post("/api/upload_and_send")
+async def upload_and_send(file: UploadFile = File(...)):
+    """Receives drag-and-dropped file binary directly and streams via encrypted socket."""
+    if not node.is_connected:
+        return {"status": "error", "message": "Cannot send: No active peer connection."}
+
+    staging_dir = os.path.join(_PROJECT_ROOT, "_temp_staging")
+    os.makedirs(staging_dir, exist_ok=True)
+    temp_path = os.path.join(staging_dir, file.filename)
+
+    with open(temp_path, "wb") as f:
+        content = await file.read()
+        f.write(content)
+
+    success = node.send_file(temp_path)
+    return {"status": "ok" if success else "error", "filename": file.filename}
+
+
+@app.post("/api/upload_and_share_multi")
+async def upload_and_share_multi(files: List[UploadFile] = File(...)):
+    """Receives multiple drag-and-dropped files and publishes vault manifest."""
+    if not node.is_connected:
+        return {"status": "error", "message": "Cannot share vault: No active peer connection."}
+
+    staging_dir = os.path.join(_PROJECT_ROOT, "_temp_staging")
+    os.makedirs(staging_dir, exist_ok=True)
+    staged_paths = []
+
+    for file in files:
+        temp_path = os.path.join(staging_dir, file.filename)
+        with open(temp_path, "wb") as f:
+            content = await file.read()
+            f.write(content)
+        staged_paths.append(temp_path)
+
+    success = node.share_multi_files(staged_paths)
+    return {"status": "ok" if success else "error", "count": len(staged_paths)}
 
 
 # ---------------------------------------------------------------------------

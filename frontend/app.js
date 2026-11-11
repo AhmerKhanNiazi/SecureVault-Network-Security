@@ -390,49 +390,41 @@ function escapeHtml(str) {
 }
 
 // -------------------------------------------------------------
-// File Transfer (FIX BUG-009, BUG-013)
+// File Transfer (Zero-Fakepath Native Windows Dialog Engine)
 // -------------------------------------------------------------
 function triggerFileInput() {
-  // FIX BUG-009: block file pick if not connected
   if (currentStatus !== 'CONNECTED') {
     appendAuditLog('alert', '[ERR] Connect to a peer before sending files.');
     return;
   }
-  document.getElementById('fileInputEl').click();
+  // Opens Windows Native File Dialog directly via backend — returns real absolute path!
+  appendAuditLog('system', '[FILE] Launching Windows File Dialog...');
+  sendToBackend('pick_and_send_file');
 }
 
 function handleFileSelected(e) {
+  // Fallback for native input element
   const file = e.target.files[0];
   if (!file) return;
 
-  // FIX BUG-013: removed prompt() — use file.name directly
-  // The backend receives a path, but since we're running locally we pass the full path
-  // via a hidden data attribute set by the native file input.
-  // We read the full path from the input element's value (works in Edge app-mode).
-  const fileInput = document.getElementById('fileInputEl');
-  // In Edge/Chrome app-mode, file.name is relative. We need the full path.
-  // We store it in a dataset attribute for safety.
-  let filepath = '';
-  if (fileInput.files[0]) {
-    // On Windows in Edge app-mode, we can get the path from the value
-    filepath = fileInput.value || file.name;
-    // Normalize Windows path separators
-    filepath = filepath.replace(/\\/g, '\\');
-  }
+  const formData = new FormData();
+  formData.append('file', file);
+  appendAuditLog('system', `[STAGING] Uploading '${file.name}' to streaming engine...`);
 
-  if (!filepath) {
-    appendAuditLog('alert', '[ERR] Could not determine file path. Please try again.');
-    return;
-  }
+  fetch('/api/upload_and_send', { method: 'POST', body: formData })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === 'ok') {
+        document.getElementById('fileDropzone').style.display = 'none';
+        document.getElementById('progressVessel').style.display = 'flex';
+        document.getElementById('progFileName').innerText = file.name;
+      } else {
+        appendAuditLog('alert', `[ERR] ${data.message || 'Send failed'}`);
+      }
+    })
+    .catch(err => appendAuditLog('alert', `[ERR] Upload failed: ${err}`));
 
-  sendToBackend('send_file', { filepath });
-
-  // Reset file input so the same file can be re-selected
-  fileInput.value = '';
-
-  document.getElementById('fileDropzone').style.display = 'none';
-  document.getElementById('progressVessel').style.display = 'flex';
-  document.getElementById('progFileName').innerText = file.name;
+  e.target.value = '';
 }
 
 function formatBytes(bytes) {
@@ -726,6 +718,65 @@ function drawTerminalNode(x, y, label, sub, isConnected, now) {
 window.addEventListener('DOMContentLoaded', () => {
   initWebSocket();
   startAnimationLoop();
+
+  // Drag and Drop File Upload Listener (Zero-Fakepath HTTP Staging)
+  const dropzone = document.getElementById('fileDropzone');
+  if (dropzone) {
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+    dropzone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+    });
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+
+      if (currentStatus !== 'CONNECTED') {
+        appendAuditLog('alert', '[ERR] Connect to a peer before dropping files.');
+        return;
+      }
+
+      const files = e.dataTransfer.files;
+      if (!files || files.length === 0) return;
+
+      if (files.length === 1) {
+        const formData = new FormData();
+        formData.append('file', files[0]);
+        appendAuditLog('system', `[STAGING] Uploading '${files[0].name}' to streaming engine...`);
+        fetch('/api/upload_and_send', { method: 'POST', body: formData })
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'ok') {
+              document.getElementById('fileDropzone').style.display = 'none';
+              document.getElementById('progressVessel').style.display = 'flex';
+              document.getElementById('progFileName').innerText = files[0].name;
+            } else {
+              appendAuditLog('alert', `[ERR] ${data.message || 'Send failed'}`);
+            }
+          })
+          .catch(err => appendAuditLog('alert', `[ERR] File upload failed: ${err}`));
+      } else {
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+          formData.append('files', files[i]);
+        }
+        appendAuditLog('system', `[VAULT] Staging ${files.length} dropped files for vault distribution...`);
+        fetch('/api/upload_and_share_multi', { method: 'POST', body: formData })
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'ok') {
+              appendAuditLog('success', `[VAULT] Staged ${data.count} file(s) for multi-file vault distribution.`);
+            } else {
+              appendAuditLog('alert', `[ERR] ${data.message || 'Multi staging failed'}`);
+            }
+          })
+          .catch(err => appendAuditLog('alert', `[ERR] Multi upload failed: ${err}`));
+      }
+    });
+  }
 });
 
 // -------------------------------------------------------------
@@ -847,16 +898,30 @@ function triggerMultiFileInput() {
     appendAuditLog('alert', '[ERR] Connect to a peer before sharing files.');
     return;
   }
-  document.getElementById('fileInputMultiEl').click();
+  // Opens Windows Native Multi-File Dialog directly via backend — returns real absolute paths!
+  appendAuditLog('system', '[VAULT] Launching Windows Multi-File Picker...');
+  sendToBackend('pick_and_share_multi');
 }
 
 function handleMultiFilesSelected(e) {
   const files = Array.from(e.target.files);
   if (!files.length) return;
 
-  const filepaths = files.map(f => f.value || f.name);
-  sendToBackend('share_multi_files', { filepaths });
-  appendAuditLog('system', `[VAULT] Staged ${files.length} file(s) for multi-file vault distribution.`);
+  const formData = new FormData();
+  files.forEach(f => formData.append('files', f));
+  appendAuditLog('system', `[VAULT] Uploading ${files.length} files to vault staging engine...`);
+
+  fetch('/api/upload_and_share_multi', { method: 'POST', body: formData })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === 'ok') {
+        appendAuditLog('success', `[VAULT] Staged ${data.count} file(s) for multi-file vault distribution.`);
+      } else {
+        appendAuditLog('alert', `[ERR] Multi-file staging failed: ${data.message || 'error'}`);
+      }
+    })
+    .catch(err => appendAuditLog('alert', `[ERR] Upload failed: ${err}`));
+
   e.target.value = '';
 }
 
