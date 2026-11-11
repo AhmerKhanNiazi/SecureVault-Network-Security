@@ -27,6 +27,12 @@ import tempfile
 import urllib.request
 import uvicorn
 
+# PyInstaller --windowed guard: prevent NoneType write crashes
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w", encoding="utf-8")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w", encoding="utf-8")
+
 # Anchor CWD to this file's folder and ensure sys.path
 if getattr(sys, "frozen", False):
     PROJECT_ROOT = sys._MEIPASS
@@ -41,10 +47,16 @@ from backend.web_bridge import app, node
 from backend.protocol import SecurityMode
 
 
-def find_free_port(start_port: int = 8080) -> int:
-    """Finds an open TCP port on localhost."""
+def find_free_port(start_port: int = 8082) -> int:
+    """Finds an open TCP port on localhost with dual connect/bind verification."""
     port = start_port
     while port < 65535:
+        # Check 1: Can we connect? If yes, another process is actively listening!
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(("127.0.0.1", port)) == 0:
+                port += 1
+                continue
+        # Check 2: Can we bind?
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
                 s.bind(("127.0.0.1", port))
@@ -128,8 +140,11 @@ def main():
 
     args = parser.parse_args()
 
-    # Determine free Web UI port
-    web_port = args.web_port if args.web_port else find_free_port(8080)
+    # Determine free Web UI port (auto-detects and avoids conflicts with background services)
+    requested_port = args.web_port if args.web_port else 8082
+    web_port = find_free_port(requested_port)
+    if args.web_port and web_port != args.web_port:
+        print(f"[LAUNCHER] Notice: Requested port {args.web_port} is busy. Automatically switched to open port {web_port}.")
     web_url = f"http://127.0.0.1:{web_port}"
 
     print("=" * 70)
