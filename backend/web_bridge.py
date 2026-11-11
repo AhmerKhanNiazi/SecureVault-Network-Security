@@ -41,6 +41,7 @@ if _PROJECT_ROOT not in sys.path:
 
 from backend.lan_node import LanNode
 from backend.protocol import SecurityMode, FrameType
+from backend.lan_discovery import LanDiscovery
 
 
 # ---------------------------------------------------------------------------
@@ -50,7 +51,12 @@ from backend.protocol import SecurityMode, FrameType
 async def lifespan(fastapi_app: FastAPI):
     global loop
     loop = asyncio.get_running_loop()
+    try:
+        discovery.start()
+    except Exception:
+        pass
     yield
+    discovery.stop()
     # Cleanup on shutdown
     for ws in list(_ws_snapshot()):
         try:
@@ -93,15 +99,6 @@ def _ws_remove(ws: WebSocket):
         connected_websockets.discard(ws)
 
 
-# ---------------------------------------------------------------------------
-# Global state
-# ---------------------------------------------------------------------------
-# FIX BUG-004: downloads_dir anchored to project root, not CWD
-_downloads_dir = os.path.join(_PROJECT_ROOT, "received_files")
-node = LanNode(downloads_dir=_downloads_dir)
-loop: Optional[asyncio.AbstractEventLoop] = None
-
-
 def get_local_ip() -> str:
     """Detects active local Wi-Fi/LAN IPv4 address."""
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -113,6 +110,16 @@ def get_local_ip() -> str:
     finally:
         s.close()
     return ip
+
+
+# ---------------------------------------------------------------------------
+# Global state
+# ---------------------------------------------------------------------------
+# FIX BUG-004: downloads_dir anchored to project root, not CWD
+_downloads_dir = os.path.join(_PROJECT_ROOT, "received_files")
+node = LanNode(downloads_dir=_downloads_dir)
+discovery = LanDiscovery(local_ip=get_local_ip(), tcp_port=5500)
+loop: Optional[asyncio.AbstractEventLoop] = None
 
 
 # ---------------------------------------------------------------------------
@@ -184,6 +191,14 @@ node.on_packet_event = lambda direction, ftype, mode, length, raw_hex: sync_broa
     "raw_hex": raw_hex
 })
 
+# Phase 2 & 4: Threat Alerts and Multi-File Manifest Callbacks
+node.on_threat_detected = lambda report: sync_broadcast("threat_alert", report)
+node.on_vault_manifest = lambda manifest: sync_broadcast("vault_manifest", manifest)
+
+# Phase 3: Zero-Config LAN Peer Discovery Callbacks
+discovery.on_peer_discovered = lambda peer_info: sync_broadcast("peer_discovered", peer_info)
+discovery.on_peer_lost = lambda peer_key: sync_broadcast("peer_lost", {"peer_key": peer_key})
+
 
 # ---------------------------------------------------------------------------
 # WebSocket endpoint (FIX BUG-006, BUG-012, BUG-022, BUG-026, BUG-027)
@@ -202,7 +217,10 @@ async def websocket_endpoint(websocket: WebSocket):
             "role": node.role,
             "security_mode": "ENCRYPTED" if node.active_mode == SecurityMode.ENCRYPTED else "PLAINTEXT",
             "peer_address": f"{node.peer_address[0]}:{node.peer_address[1]}" if node.peer_address else None,
-            "session_fingerprint": node.crypto.compute_sha256(node.crypto.session_key)[:16] if node.crypto.session_key else None
+            "session_fingerprint": node.crypto.compute_sha256(node.crypto.session_key)[:16] if node.crypto.session_key else None,
+            "tamper_active": node.inject_tamper,
+            "scanner_active": node.scanner.is_enabled,
+            "discovered_peers": discovery.get_discovered_peers()
         }
     }))
 
@@ -276,6 +294,40 @@ async def websocket_endpoint(websocket: WebSocket):
 
             elif action == "disconnect":
                 node.disconnect()
+
+            # Phase 2 Demo Toggle: Anti-Malware Shield
+            elif action == "set_scanner":
+                enabled = bool(cmd.get("enabled", True))
+                node.scanner.is_enabled = enabled
+                mode_str = "ACTIVE (Threats Blocked)" if enabled else "BYPASSED (Malware Permitted)"
+                node.log("ALERT" if not enabled else "SUCCESS", f"[DEMO TOGGLE] Anti-Malware Shield set to: {mode_str}")
+                await broadcast_to_ui("scanner_updated", {"enabled": enabled})
+
+            # Phase 1 Demo Toggle: Tamper Injection
+            elif action == "set_tamper":
+                enabled = bool(cmd.get("enabled", False))
+                node.inject_tamper = enabled
+                mode_str = "INJECTING 1-BIT CORRUPTION" if enabled else "CLEAN INTEGRITY"
+                node.log("ALERT" if enabled else "SUCCESS", f"[DEMO TOGGLE] Tamper Injection Mode: {mode_str}")
+                await broadcast_to_ui("tamper_updated", {"enabled": enabled})
+
+            # Phase 3: Zero-Config LAN Peer Direct Connect
+            elif action == "connect_peer":
+                host = cmd.get("host")
+                port = int(cmd.get("port", 5500))
+                if host:
+                    node.connect_to_server(host=host, port=port)
+
+            # Phase 4: Multi-File Vault Sharing & Selective Download
+            elif action == "share_multi_files":
+                filepaths = cmd.get("filepaths", [])
+                if filepaths:
+                    node.share_multi_files(filepaths)
+
+            elif action == "request_file_download":
+                vault_id = cmd.get("vault_id", "")
+                requested_ids = cmd.get("requested_ids", [])
+                node.request_file_download(vault_id, requested_ids)
 
     except WebSocketDisconnect:
         pass

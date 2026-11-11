@@ -50,17 +50,48 @@
         </div>
       </div>
 
-      <!-- Security Mode Switcher (Wireshark Demonstration Hero Toggle) -->
-      <div class="security-toggle-container">
-        <label class="toggle-switch">
-          <input type="checkbox" id="securityModeToggle" checked>
-          <span class="toggle-slider">
-            <span class="toggle-knob"></span>
-          </span>
-        </label>
-        <div class="toggle-label-box">
-          <span class="mode-title" id="modeTitle">&#x1F510; AES-256-GCM SECURE</span>
-          <span class="mode-desc" id="modeDesc">Ciphertext Payload Active</span>
+      <!-- Presentation Demo Toggles Deck -->
+      <div class="demo-toggles-deck">
+        <!-- Toggle 1: Encryption Mode (AES-256 vs Plaintext Wireshark) -->
+        <div class="security-toggle-container">
+          <label class="toggle-switch">
+            <input type="checkbox" id="securityModeToggle" checked>
+            <span class="toggle-slider">
+              <span class="toggle-knob"></span>
+            </span>
+          </label>
+          <div class="toggle-label-box">
+            <span class="mode-title" id="modeTitle">&#x1F510; AES-256 SECURE</span>
+            <span class="mode-desc" id="modeDesc">Ciphertext Active</span>
+          </div>
+        </div>
+
+        <!-- Toggle 2: Anti-Malware Shield (Active vs Bypass) -->
+        <div class="security-toggle-container">
+          <label class="toggle-switch">
+            <input type="checkbox" id="malwareShieldToggle" checked onchange="handleMalwareToggle(this)">
+            <span class="toggle-slider">
+              <span class="toggle-knob"></span>
+            </span>
+          </label>
+          <div class="toggle-label-box">
+            <span class="mode-title" id="malwareShieldTitle">&#x1F6E1;&#xFE0F; MALWARE SHIELD</span>
+            <span class="mode-desc" id="malwareShieldDesc">Active &bull; Quarantine</span>
+          </div>
+        </div>
+
+        <!-- Toggle 3: Integrity Tamper Injector (Off vs 1-Bit Corruption) -->
+        <div class="security-toggle-container tamper-toggle-box">
+          <label class="toggle-switch alert-switch">
+            <input type="checkbox" id="tamperToggle" onchange="handleTamperToggle(this)">
+            <span class="toggle-slider">
+              <span class="toggle-knob"></span>
+            </span>
+          </label>
+          <div class="toggle-label-box">
+            <span class="mode-title" id="tamperTitle">&#x2694;&#xFE0F; TAMPER DEMO</span>
+            <span class="mode-desc" id="tamperDesc">Off &bull; Clean Stream</span>
+          </div>
         </div>
       </div>
     </header>
@@ -128,6 +159,20 @@
           <span class="btn-text">INITIALIZE SECURE SERVER</span>
         </button>
 
+        <!-- AirShare Zero-Config Auto-Discovery Radar (Phase 3) -->
+        <div class="lan-radar-box">
+          <div class="radar-header">
+            <div class="radar-title-group">
+              <span class="radar-pulse-dot"></span>
+              <span class="radar-title">AIRSHARE RADAR (UDP 5555)</span>
+            </div>
+            <span class="badge-pill" id="peerCountBadge">0 Online</span>
+          </div>
+          <div class="radar-peers-list" id="radarPeersList">
+            <div class="radar-empty">Searching subnet for active SecureVault peers...</div>
+          </div>
+        </div>
+
         <!-- Cryptographic Telemetry Card -->
         <div class="crypto-meta-card">
           <div class="crypto-meta-title">&#x1F512; CRYPTOGRAPHIC LAYER</div>
@@ -186,11 +231,31 @@
         <!-- File Transfer Vessel & Dropzone -->
         <div class="file-transfer-box">
           <!-- FIX BUG-009: guard click with connection check via JS -->
-          <div class="file-dropzone" id="fileDropzone" onclick="triggerFileInput()">
+          <div class="file-dropzone" id="fileDropzone">
             <input type="file" id="fileInputEl" style="display: none;" onchange="handleFileSelected(event)">
-            <div class="drop-icon">&#x1F4C1;</div>
-            <div class="drop-title" id="dropTitle">DROP CONFIDENTIAL FILE OR CLICK TO BROWSE</div>
-            <div class="drop-sub" id="dropSub">AES-256 Encrypted Chunk Streaming with SHA-256 Integrity Verification</div>
+            <input type="file" id="fileInputMultiEl" multiple style="display: none;" onchange="handleMultiFilesSelected(event)">
+            <div class="drop-icon" onclick="triggerFileInput()">&#x1F4C1;</div>
+            <div class="drop-title" id="dropTitle" onclick="triggerFileInput()">DROP CONFIDENTIAL FILE OR CLICK TO BROWSE</div>
+            <div class="drop-sub" id="dropSub">AES-256 Encrypted Chunk Streaming &bull; Rolling SHA-256 Checksum</div>
+            <div class="drop-actions-row">
+              <button class="ghost-btn mini-ghost" type="button" onclick="triggerFileInput()">&#x1F4C4; SINGLE FILE</button>
+              <button class="glow-button mini-btn" type="button" onclick="triggerMultiFileInput()">&#x1F4E6; SHARE MULTI-FILES</button>
+            </div>
+          </div>
+
+          <!-- Multi-File Staging & Selective Download Shelf (Phase 4) -->
+          <div class="vault-shelf-box" id="vaultShelfBox" style="display: none;">
+            <div class="vault-shelf-header">
+              <span class="vault-shelf-title" id="vaultShelfTitle">&#x1F4E6; MULTI-FILE VAULT CATALOG</span>
+              <button class="ghost-btn mini-ghost" type="button" onclick="closeVaultShelf()">&#x2715; CLOSE</button>
+            </div>
+            <div class="vault-items-list" id="vaultItemsList">
+              <!-- Dynamically populated items with checkboxes -->
+            </div>
+            <div class="vault-shelf-actions" id="vaultShelfActions">
+              <button class="glow-button mini-btn" id="vaultPullBtn" type="button" onclick="downloadSelectedVaultFiles()">DOWNLOAD SELECTED</button>
+              <button class="ghost-btn mini-ghost" type="button" onclick="downloadAllVaultFiles()">DOWNLOAD ALL</button>
+            </div>
           </div>
 
           <!-- Liquid Wave Progress Vessel -->
@@ -236,6 +301,25 @@
     </main>
   </div>
 
-  <script src="/static/app.js?v=3.0"></script>
+  <!-- Threat & Malware Alert Modal (Phase 2) -->
+  <div class="threat-alert-overlay" id="threatModal" style="display: none;">
+    <div class="threat-modal-card glass-panel">
+      <div class="threat-modal-header">
+        <span class="threat-icon">&#x26A0;&#xFE0F;</span>
+        <span class="threat-title" id="threatModalTitle">CRITICAL SECURITY THREAT INTERCEPTED</span>
+      </div>
+      <div class="threat-modal-body" id="threatModalBody">
+        Standard EICAR Antivirus Test Pattern detected in incoming payload.
+      </div>
+      <div class="threat-modal-meta" id="threatModalMeta">
+        Action: Quarantined to <code>quarantine/</code> directory with SHA-256 seal.
+      </div>
+      <div class="threat-modal-footer">
+        <button class="glow-button alert-btn" onclick="closeThreatModal()">ACKNOWLEDGE &amp; SECURE</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js?v=4.0"></script>
 </body>
 </html>

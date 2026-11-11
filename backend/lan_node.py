@@ -18,9 +18,12 @@ import threading
 import os
 import time
 import json
+import uuid
+import hashlib
 from typing import Optional, Callable, Dict, Any, Tuple
 from backend.crypto_engine import CryptoEngine
 from backend.protocol import ProtocolFrame, FrameType, SecurityMode
+from backend.threat_scanner import ThreatScanner, ThreatReport
 
 
 class LanNode:
@@ -30,6 +33,10 @@ class LanNode:
     def __init__(self, downloads_dir: str = "received_files"):
         self.downloads_dir = downloads_dir
         os.makedirs(self.downloads_dir, exist_ok=True)
+
+        self.quarantine_dir = os.path.join(os.path.dirname(self.downloads_dir) if os.path.dirname(self.downloads_dir) else ".", "quarantine")
+        os.makedirs(self.quarantine_dir, exist_ok=True)
+        self.scanner = ThreatScanner(quarantine_dir=self.quarantine_dir)
 
         self.crypto = CryptoEngine()
         self.role: Optional[str] = None  # 'server' or 'client'
@@ -46,6 +53,13 @@ class LanNode:
         self._incoming_file_handle = None
         self._incoming_bytes_received = 0
         self._last_rx_pct = -1.0
+        self._incoming_hasher: Optional[Any] = None
+        self._incoming_transfer_id: Optional[str] = None
+
+        # Concurrency & Transfer State Guards (Phase 1 Fix)
+        self.is_sending_active = False
+        self._transfer_lock = threading.Lock()
+        self.inject_tamper = False  # Demo Toggle 2: Tamper Simulation
 
         # Thread lock for send operations
         self._send_lock = threading.Lock()
@@ -57,6 +71,11 @@ class LanNode:
         self.on_file_progress: Optional[Callable[[str, str, int, int, float], None]] = None
         self.on_file_complete: Optional[Callable[[str, str, bool, str], None]] = None
         self.on_packet_event: Optional[Callable[[str, str, str, int, str], None]] = None
+        self.on_threat_detected: Optional[Callable[[Dict[str, Any]], None]] = None
+        self.on_vault_manifest: Optional[Callable[[Dict[str, Any]], None]] = None
+
+        # Phase 4: Staged files for selective multi-file pull
+        self._staged_files: Dict[int, str] = {}
 
     def log(self, level: str, msg: str, details: Optional[Dict[str, Any]] = None):
         if self.on_log:
@@ -143,6 +162,9 @@ class LanNode:
         """Reset per-connection state without closing the server socket."""
         self.is_connected = False
         self.peer_address = None
+        self.is_sending_active = False
+        self._incoming_hasher = None
+        self._incoming_transfer_id = None
         # FIX BUG-020: close any open file handle on disconnect
         if self._incoming_file_handle:
             try:
@@ -335,18 +357,36 @@ class LanNode:
                 elif frame.frame_type == FrameType.FILE_START:
                     meta = json.loads(decrypted_bytes.decode("utf-8"))
                     self._incoming_file_meta = meta
+                    self._incoming_transfer_id = meta.get("transfer_id", "")
+                    self._incoming_hasher = hashlib.sha256()
                     save_path = os.path.join(self.downloads_dir, meta["filename"])
                     self._incoming_file_handle = open(save_path, "wb")
                     self._incoming_bytes_received = 0
                     self._last_rx_pct = -1.0
-                    self.log("FILE", f"Incoming file transfer: '{meta['filename']}' ({meta['filesize']} bytes). Expected SHA-256: {meta['sha256']}")
+                    expected_info = f"Expected SHA-256: {meta.get('sha256', 'Streaming verify')}" if meta.get("sha256") else "Streaming hash mode"
+                    self.log("FILE", f"Incoming file transfer: '{meta['filename']}' ({meta['filesize']} bytes). {expected_info}")
 
                 elif frame.frame_type == FrameType.FILE_CHUNK:
-                    if self._incoming_file_handle:
-                        self._incoming_file_handle.write(decrypted_bytes)
-                        self._incoming_bytes_received += len(decrypted_bytes)
-                        total = self._incoming_file_meta["filesize"] if self._incoming_file_meta else 1
-                        pct = round((self._incoming_bytes_received / total) * 100, 1)
+                    if self._incoming_file_handle and self._incoming_file_meta:
+                        total = self._incoming_file_meta.get("filesize", 1)
+                        chunk_len = len(decrypted_bytes)
+
+                        # Strict Overflow Boundary Guard (Fixes 3GB -> 6GB Lab Bug)
+                        if self._incoming_bytes_received + chunk_len > total:
+                            allowed_len = max(0, total - self._incoming_bytes_received)
+                            if allowed_len > 0:
+                                self._incoming_file_handle.write(decrypted_bytes[:allowed_len])
+                                if self._incoming_hasher:
+                                    self._incoming_hasher.update(decrypted_bytes[:allowed_len])
+                                self._incoming_bytes_received += allowed_len
+                            self.log("ALERT", f"BUFFER OVERFLOW TRAP: Dropped {chunk_len - allowed_len} excess bytes beyond declared size ({total} bytes).")
+                        else:
+                            self._incoming_file_handle.write(decrypted_bytes)
+                            if self._incoming_hasher:
+                                self._incoming_hasher.update(decrypted_bytes)
+                            self._incoming_bytes_received += chunk_len
+
+                        pct = min(100.0, round((self._incoming_bytes_received / max(1, total)) * 100, 1))
                         if (pct - self._last_rx_pct >= 2.0) or (self._incoming_bytes_received >= total):
                             self._last_rx_pct = pct
                             self.trigger_packet_event("RX", FrameType.FILE_CHUNK, frame.mode, len(frame.payload), "")
@@ -354,26 +394,72 @@ class LanNode:
                                 self.on_file_progress("RX", self._incoming_file_meta["filename"], self._incoming_bytes_received, total, pct)
 
                 elif frame.frame_type == FrameType.FILE_END:
-                    if self._incoming_file_handle:
+                    if self._incoming_file_handle and self._incoming_file_meta:
                         self._incoming_file_handle.close()
                         self._incoming_file_handle = None
 
                         filename = self._incoming_file_meta["filename"]
-                        expected_hash = self._incoming_file_meta["sha256"]
                         file_path = os.path.join(self.downloads_dir, filename)
 
-                        # Compute and verify SHA-256 Integrity
-                        computed_hash = CryptoEngine.compute_file_sha256(file_path)
-                        is_intact = (computed_hash.lower() == expected_hash.lower())
+                        # Read expected hash from FILE_END or FILE_START
+                        expected_hash = ""
+                        try:
+                            end_meta = json.loads(decrypted_bytes.decode("utf-8"))
+                            expected_hash = end_meta.get("sha256", "")
+                        except Exception:
+                            expected_hash = self._incoming_file_meta.get("sha256", "")
+
+                        # Instant Hash Verification via rolling hasher without re-reading gigabytes
+                        if self._incoming_hasher:
+                            computed_hash = self._incoming_hasher.hexdigest()
+                        else:
+                            computed_hash = CryptoEngine.compute_file_sha256(file_path)
+
+                        is_intact = (computed_hash.lower() == expected_hash.lower()) if expected_hash else True
 
                         if is_intact:
-                            self.log("SUCCESS", f"FILE INTEGRITY VERIFIED! SHA-256 Checksum Match: {computed_hash}")
+                            self.log("SUCCESS", f"STREAM INTEGRITY VERIFIED! SHA-256 Checksum Match: {computed_hash}")
                         else:
-                            self.log("ALERT", f"FILE INTEGRITY FAILED! Expected: {expected_hash}, Got: {computed_hash}")
+                            self.log("ALERT", f"INTEGRITY VIOLATION DETECTED! Expected: {expected_hash}, Computed: {computed_hash}")
+
+                        # Phase 2: Multi-Tier Threat & Antivirus Inspection
+                        final_path = file_path
+                        if os.path.exists(file_path):
+                            threat_report = self.scanner.scan_file_on_disk(file_path)
+                            if not threat_report.is_safe:
+                                self.log("ALERT", f"[MALWARE SHIELD ALERT] {threat_report.threat_type} detected in '{filename}'! Threat details: {threat_report.details}")
+                                if threat_report.quarantined:
+                                    # Threat quarantined safely — remove payload from downloads directory
+                                    try:
+                                        if os.path.exists(file_path):
+                                            os.remove(file_path)
+                                    except Exception:
+                                        pass
+                                    final_path = threat_report.quarantine_path or file_path
+                                    self.log("WARNING", f"[QUARANTINE ENFORCED] Malicious file removed from downloads and secured in: {final_path}")
+                                if self.on_threat_detected:
+                                    self.on_threat_detected(threat_report.to_dict())
+                            else:
+                                self.log("SUCCESS", f"[SECURITY INSPECTION] Payload '{filename}' scanned clean (0 threats detected).")
 
                         if self.on_file_complete:
-                            self.on_file_complete(filename, file_path, is_intact, computed_hash)
+                            self.on_file_complete(filename, final_path, is_intact, computed_hash)
+
                         self._incoming_file_meta = None
+                        self._incoming_hasher = None
+                        self._incoming_transfer_id = None
+
+                elif frame.frame_type == FrameType.VAULT_MANIFEST:
+                    manifest = json.loads(decrypted_bytes.decode("utf-8"))
+                    self.log("INFO", f"Received Multi-File Vault Manifest ({len(manifest.get('items', []))} files offered).")
+                    if self.on_vault_manifest:
+                        self.on_vault_manifest(manifest)
+
+                elif frame.frame_type == FrameType.FILE_PULL_REQ:
+                    req = json.loads(decrypted_bytes.decode("utf-8"))
+                    requested_ids = req.get("requested_ids", [])
+                    self.log("INFO", f"Remote peer requested selective download of {len(requested_ids)} file(s).")
+                    self._handle_incoming_pull_request(requested_ids)
 
                 elif frame.frame_type == FrameType.DISCONNECT:
                     self.log("INFO", "Disconnect signal received.")
@@ -420,7 +506,7 @@ class LanNode:
         return success
 
     def send_file(self, file_path: str) -> bool:
-        """Streams a file in chunks with AES-256 encryption and SHA-256 hash."""
+        """Streams a file in chunks with AES-256 encryption and on-the-fly streaming SHA-256 hash."""
         if not self.conn or not self.is_connected:
             self.log("ERROR", "Cannot send file: Not connected.")
             return False
@@ -429,55 +515,150 @@ class LanNode:
             self.log("ERROR", f"File not found: {file_path}")
             return False
 
+        # Atomic Concurrency Guard: prevent duplicate simultaneous transfers
+        with self._transfer_lock:
+            if self.is_sending_active:
+                self.log("WARNING", "Cannot send file: Another transfer is already in progress.")
+                return False
+            self.is_sending_active = True
+
         def _worker():
             try:
                 filename = os.path.basename(file_path)
                 filesize = os.path.getsize(file_path)
-                self.log("FILE", f"Computing SHA-256 checksum for '{filename}' ({filesize} bytes)...")
-                file_hash = CryptoEngine.compute_file_sha256(file_path)
-                self.log("SUCCESS", f"Computed SHA-256: {file_hash}")
+                transfer_id = str(uuid.uuid4())[:8]
+                self.log("FILE", f"Initiating high-speed stream for '{filename}' ({filesize} bytes)...")
 
-                # 1. Send FILE_START with Metadata
+                # 1. Send FILE_START with Metadata immediately (Zero delay pre-hash!)
                 meta = {
+                    "transfer_id": transfer_id,
                     "filename": filename,
-                    "filesize": filesize,
-                    "sha256": file_hash
+                    "filesize": filesize
                 }
                 meta_frame = self._build_frame(FrameType.FILE_START, json.dumps(meta).encode("utf-8"))
                 self._send_raw_frame(meta_frame)
                 self.trigger_packet_event("TX", FrameType.FILE_START, self.active_mode, len(meta_frame.payload), meta_frame.payload[:32].hex())
 
-                # 2. Stream Chunks (FIX BUG-021: removed time.sleep blocking)
+                # 2. Stream Chunks with On-The-Fly Rolling SHA-256
                 bytes_sent = 0
                 last_reported_pct = -1.0
+                hasher = hashlib.sha256()
+
                 with open(file_path, "rb") as f:
                     while chunk := f.read(self.CHUNK_SIZE):
                         if not self.is_connected:
                             self.log("WARNING", "File transfer aborted: connection lost.")
                             break
+                        hasher.update(chunk)
                         chunk_frame = self._build_frame(FrameType.FILE_CHUNK, chunk)
                         if not self._send_raw_frame(chunk_frame):
                             self.log("ERROR", "File chunk send failed.")
                             break
                         bytes_sent += len(chunk)
-                        pct = round((bytes_sent / filesize) * 100, 1)
+                        pct = min(100.0, round((bytes_sent / max(1, filesize)) * 100, 1))
                         if (pct - last_reported_pct >= 2.0) or (bytes_sent >= filesize):
                             last_reported_pct = pct
                             self.trigger_packet_event("TX", FrameType.FILE_CHUNK, self.active_mode, len(chunk_frame.payload), chunk_frame.payload[:16].hex())
                             if self.on_file_progress:
                                 self.on_file_progress("TX", filename, bytes_sent, filesize, pct)
 
-                # 3. Send FILE_END
+                # 3. Finalize Checksum and send FILE_END
                 if self.is_connected:
-                    end_frame = self._build_frame(FrameType.FILE_END, b"EOF")
+                    final_hash = hasher.hexdigest()
+                    if self.inject_tamper:
+                        # Demo Toggle 2: Injected 1-bit corruption for live lab presentation!
+                        tampered_char = 'a' if final_hash[-1] != 'a' else 'b'
+                        final_hash = final_hash[:-1] + tampered_char
+                        self.log("ALERT", f"[TAMPER INJECTION DEMO] Corrupted SHA-256 transmitted: {final_hash}")
+                    else:
+                        self.log("SUCCESS", f"Computed Final SHA-256: {final_hash}")
+
+                    end_meta = {
+                        "transfer_id": transfer_id,
+                        "sha256": final_hash,
+                        "bytes_sent": bytes_sent
+                    }
+                    end_frame = self._build_frame(FrameType.FILE_END, json.dumps(end_meta).encode("utf-8"))
                     self._send_raw_frame(end_frame)
-                    self.trigger_packet_event("TX", FrameType.FILE_END, self.active_mode, len(end_frame.payload), end_frame.payload.hex())
-                    self.log("SUCCESS", f"File '{filename}' transmitted completely.")
+                    self.trigger_packet_event("TX", FrameType.FILE_END, self.active_mode, len(end_frame.payload), end_frame.payload[:16].hex())
+                    self.log("SUCCESS", f"File '{filename}' transmitted completely ({bytes_sent} bytes).")
             except Exception as e:
                 self.log("ERROR", f"File transfer failed: {str(e)}")
+            finally:
+                with self._transfer_lock:
+                    self.is_sending_active = False
 
         threading.Thread(target=_worker, daemon=True).start()
         return True
+
+    # -------------------------------------------------------------------------
+    # Phase 4: Multi-File Vault & Selective Pull Protocol
+    # -------------------------------------------------------------------------
+    def share_multi_files(self, file_paths: list) -> bool:
+        """Publishes a manifest catalog of multiple files for peer selective download."""
+        if not self.conn or not self.is_connected:
+            self.log("ERROR", "Cannot share vault: Not connected.")
+            return False
+
+        self._staged_files.clear()
+        items = []
+        vault_id = f"vlt_{str(uuid.uuid4())[:8]}"
+
+        for idx, fp in enumerate(file_paths):
+            if os.path.exists(fp):
+                self._staged_files[idx] = fp
+                items.append({
+                    "id": idx,
+                    "filename": os.path.basename(fp),
+                    "size": os.path.getsize(fp)
+                })
+
+        if not items:
+            self.log("WARNING", "No existing files to stage in vault.")
+            return False
+
+        manifest = {
+            "vault_id": vault_id,
+            "items": items
+        }
+        payload = json.dumps(manifest).encode("utf-8")
+        frame = self._build_frame(FrameType.VAULT_MANIFEST, payload)
+        success = self._send_raw_frame(frame)
+        if success:
+            self.log("SUCCESS", f"Published Multi-File Vault Manifest ({len(items)} files staged).")
+            self.trigger_packet_event("TX", FrameType.VAULT_MANIFEST, self.active_mode, len(payload), payload[:32].hex())
+        return success
+
+    def request_file_download(self, vault_id: str, requested_ids: list) -> bool:
+        """Sends selective file pull request to sender for chosen item IDs."""
+        if not self.conn or not self.is_connected:
+            return False
+
+        req = {
+            "vault_id": vault_id,
+            "requested_ids": requested_ids
+        }
+        payload = json.dumps(req).encode("utf-8")
+        frame = self._build_frame(FrameType.FILE_PULL_REQ, payload)
+        success = self._send_raw_frame(frame)
+        if success:
+            self.log("INFO", f"Requested selective download of {len(requested_ids)} file(s).")
+            self.trigger_packet_event("TX", FrameType.FILE_PULL_REQ, self.active_mode, len(payload), payload[:16].hex())
+        return success
+
+    def _handle_incoming_pull_request(self, requested_ids: list):
+        """Streams requested staged files sequentially."""
+        def _queue_worker():
+            for fid in requested_ids:
+                if fid in self._staged_files:
+                    fpath = self._staged_files[fid]
+                    if os.path.exists(fpath):
+                        self.send_file(fpath)
+                        # Wait for transfer to complete before sending next file in queue
+                        while self.is_sending_active:
+                            time.sleep(0.05)
+                        time.sleep(0.1)
+        threading.Thread(target=_queue_worker, daemon=True).start()
 
     def _build_frame(self, frame_type: FrameType, payload: bytes) -> ProtocolFrame:
         if self.active_mode == SecurityMode.ENCRYPTED:
@@ -519,6 +700,9 @@ class LanNode:
         self.is_running = False
         self.role = None
         self.peer_address = None
+        self.is_sending_active = False
+        self._incoming_hasher = None
+        self._incoming_transfer_id = None
 
         # FIX BUG-020: close open file handle
         if self._incoming_file_handle:

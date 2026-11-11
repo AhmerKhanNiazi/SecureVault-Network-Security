@@ -90,6 +90,19 @@ function handleBackendEvent(event, data) {
         const fpEl = document.getElementById('sessionFpVal');
         if (fpEl) glitchDecodeText(fpEl, data.session_fingerprint + '...');
       }
+      if (data.scanner_active !== undefined) {
+        setMalwareUI(data.scanner_active);
+      }
+      if (data.tamper_active !== undefined) {
+        setTamperUI(data.tamper_active);
+      }
+      if (data.discovered_peers) {
+        discoveredPeersMap = {};
+        data.discovered_peers.forEach(p => {
+          discoveredPeersMap[`${p.ip}:${p.tcp_port}`] = p;
+        });
+        renderPeersList();
+      }
       drawCanvasDebounced();
       break;
 
@@ -135,6 +148,34 @@ function handleBackendEvent(event, data) {
 
     case 'mode_updated':
       setSecurityModeUI(data.mode === 'ENCRYPTED');
+      break;
+
+    case 'tamper_updated':
+      setTamperUI(data.enabled);
+      break;
+
+    case 'scanner_updated':
+      setMalwareUI(data.enabled);
+      break;
+
+    case 'peer_discovered':
+      discoveredPeersMap[`${data.ip}:${data.tcp_port}`] = data;
+      renderPeersList();
+      break;
+
+    case 'peer_lost':
+      if (discoveredPeersMap[data.peer_key]) {
+        delete discoveredPeersMap[data.peer_key];
+        renderPeersList();
+      }
+      break;
+
+    case 'threat_alert':
+      showThreatModal(data);
+      break;
+
+    case 'vault_manifest':
+      showVaultManifest(data);
       break;
   }
 }
@@ -394,18 +435,25 @@ function handleFileSelected(e) {
   document.getElementById('progFileName').innerText = file.name;
 }
 
+function formatBytes(bytes) {
+  if (!bytes || bytes <= 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.min(sizes.length - 1, Math.floor(Math.log(bytes) / Math.log(k)));
+  return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+}
+
 function updateFileProgress(filename, cur, total, pct) {
   const vessel = document.getElementById('progressVessel');
   vessel.style.display = 'flex';
   document.getElementById('fileDropzone').style.display = 'none';
 
+  const clampedPct = Math.min(100.0, Math.max(0.0, pct)).toFixed(1);
   document.getElementById('progFileName').innerText = filename;
-  document.getElementById('progPercentage').innerText = `${pct}%`;
-  document.getElementById('liquidWaveFill').style.width = `${pct}%`;
+  document.getElementById('progPercentage').innerText = `${clampedPct}%`;
+  document.getElementById('liquidWaveFill').style.width = `${clampedPct}%`;
 
-  const curKb = (cur / 1024).toFixed(1);
-  const totalKb = (total / 1024).toFixed(1);
-  document.getElementById('progBytesMeta').innerText = `${curKb} / ${totalKb} KB`;
+  document.getElementById('progBytesMeta').innerText = `${formatBytes(cur)} / ${formatBytes(total)}`;
 }
 
 function finishFileTransfer(filename, isIntact, sha256) {
@@ -679,3 +727,198 @@ window.addEventListener('DOMContentLoaded', () => {
   initWebSocket();
   startAnimationLoop();
 });
+
+// -------------------------------------------------------------
+// Phase 2: Anti-Malware & Threat Shield UI Controls
+// -------------------------------------------------------------
+function handleMalwareToggle(el) {
+  const enabled = el.checked;
+  sendToBackend('set_scanner', { enabled });
+  setMalwareUI(enabled);
+}
+
+function setMalwareUI(enabled) {
+  const title = document.getElementById('malwareShieldTitle');
+  const desc = document.getElementById('malwareShieldDesc');
+  const toggle = document.getElementById('malwareShieldToggle');
+  if (toggle) toggle.checked = enabled;
+  if (title && desc) {
+    title.innerHTML = enabled ? '&#x1F6E1;&#xFE0F; MALWARE SHIELD' : '&#x26A0;&#xFE0F; SHIELD BYPASSED';
+    title.style.color = enabled ? 'var(--neon-green)' : 'var(--alert-red)';
+    desc.innerText = enabled ? 'Active • Quarantine' : 'Unrestricted Ingest';
+  }
+}
+
+function showThreatModal(report) {
+  const modal = document.getElementById('threatModal');
+  const title = document.getElementById('threatModalTitle');
+  const body = document.getElementById('threatModalBody');
+  const meta = document.getElementById('threatModalMeta');
+  if (!modal) return;
+
+  if (title) title.innerText = `SECURITY THREAT INTERCEPTED: ${report.threat_type || 'MALWARE'}`;
+  if (body) body.innerText = report.details || 'Dangerous payload blocked.';
+  if (meta) {
+    meta.innerHTML = report.quarantined
+      ? `File quarantined securely to: <code>quarantine/</code> (isolated with .locked seal)`
+      : `Threat warning generated.`;
+  }
+  modal.style.display = 'flex';
+  appendAuditLog('alert', `[CRITICAL THREAT BLOCKED] ${report.threat_type}: ${report.details}`);
+}
+
+function closeThreatModal() {
+  const modal = document.getElementById('threatModal');
+  if (modal) modal.style.display = 'none';
+}
+
+// -------------------------------------------------------------
+// Phase 1 Demo Toggle: Tamper Injection Control
+// -------------------------------------------------------------
+function handleTamperToggle(el) {
+  const enabled = el.checked;
+  sendToBackend('set_tamper', { enabled });
+  setTamperUI(enabled);
+}
+
+function setTamperUI(enabled) {
+  const title = document.getElementById('tamperTitle');
+  const desc = document.getElementById('tamperDesc');
+  const toggle = document.getElementById('tamperToggle');
+  const container = document.querySelector('.tamper-toggle-box');
+  if (toggle) toggle.checked = enabled;
+  if (container) {
+    if (enabled) container.classList.add('tampered');
+    else container.classList.remove('tampered');
+  }
+  if (title && desc) {
+    title.innerHTML = enabled ? '&#x2694;&#xFE0F; TAMPER DEMO (ON)' : '&#x2694;&#xFE0F; TAMPER DEMO';
+    title.style.color = enabled ? 'var(--alert-red)' : 'var(--text-main)';
+    desc.innerText = enabled ? '1-Bit Corrupted' : 'Off • Clean Stream';
+  }
+}
+
+// -------------------------------------------------------------
+// Phase 3: AirShare Zero-Config Peer Mesh Management
+// -------------------------------------------------------------
+let discoveredPeersMap = {};
+
+function renderPeersList() {
+  const listEl = document.getElementById('radarPeersList');
+  const countEl = document.getElementById('peerCountBadge');
+  if (!listEl) return;
+
+  const keys = Object.keys(discoveredPeersMap);
+  if (countEl) countEl.innerText = `${keys.length} Online`;
+
+  if (keys.length === 0) {
+    listEl.innerHTML = '<div class="radar-empty">Searching subnet for active SecureVault peers...</div>';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  keys.forEach(k => {
+    const peer = discoveredPeersMap[k];
+    const card = document.createElement('div');
+    card.className = 'radar-peer-card fadeIn';
+    card.innerHTML = `
+      <div class="peer-info-meta">
+        <span class="peer-name">&#x1F4BB; ${escapeHtml(peer.hostname)}</span>
+        <span class="peer-ip-port">${peer.ip}:${peer.tcp_port}</span>
+      </div>
+      <button class="peer-connect-btn" onclick="connectToDiscoveredPeer('${peer.ip}', ${peer.tcp_port})">CONNECT &#x2794;</button>
+    `;
+    listEl.appendChild(card);
+  });
+}
+
+function connectToDiscoveredPeer(ip, port) {
+  appendAuditLog('system', `[AIRSHARE] Connecting directly to discovered peer ${ip}:${port}...`);
+  sendToBackend('connect_peer', { host: ip, port: port });
+}
+
+// -------------------------------------------------------------
+// Phase 4: Multi-File Staging & Selective Vault Pull
+// -------------------------------------------------------------
+let currentManifest = null;
+
+function triggerMultiFileInput() {
+  if (currentStatus !== 'CONNECTED') {
+    appendAuditLog('alert', '[ERR] Connect to a peer before sharing files.');
+    return;
+  }
+  document.getElementById('fileInputMultiEl').click();
+}
+
+function handleMultiFilesSelected(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+
+  const filepaths = files.map(f => f.value || f.name);
+  sendToBackend('share_multi_files', { filepaths });
+  appendAuditLog('system', `[VAULT] Staged ${files.length} file(s) for multi-file vault distribution.`);
+  e.target.value = '';
+}
+
+function showVaultManifest(manifest) {
+  currentManifest = manifest;
+  const shelf = document.getElementById('vaultShelfBox');
+  const itemsList = document.getElementById('vaultItemsList');
+  if (!shelf || !itemsList) return;
+
+  itemsList.innerHTML = '';
+  manifest.items.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'vault-item-row';
+    row.innerHTML = `
+      <div class="vault-item-left">
+        <input type="checkbox" class="vault-item-cb" data-id="${item.id}" checked>
+        <span>&#x1F4C4; ${escapeHtml(item.filename)}</span>
+      </div>
+      <span class="vault-item-size">${formatBytes(item.size)}</span>
+    `;
+    itemsList.appendChild(row);
+  });
+
+  shelf.style.display = 'block';
+  appendAuditLog('info', `[VAULT] Received catalog with ${manifest.items.length} shared file(s). Select files to download.`);
+}
+
+function closeVaultShelf() {
+  const shelf = document.getElementById('vaultShelfBox');
+  if (shelf) shelf.style.display = 'none';
+}
+
+function downloadSelectedVaultFiles() {
+  if (!currentManifest) return;
+  const cbs = document.querySelectorAll('.vault-item-cb:checked');
+  const selectedIds = Array.from(cbs).map(cb => parseInt(cb.getAttribute('data-id')));
+  if (!selectedIds.length) {
+    appendAuditLog('alert', '[VAULT] No files selected for download.');
+    return;
+  }
+  sendToBackend('request_file_download', {
+    vault_id: currentManifest.vault_id,
+    requested_ids: selectedIds
+  });
+  appendAuditLog('success', `[VAULT] Requested selective download of ${selectedIds.length} file(s).`);
+  closeVaultShelf();
+}
+
+function downloadAllVaultFiles() {
+  if (!currentManifest) return;
+  const allIds = currentManifest.items.map(item => item.id);
+  sendToBackend('request_file_download', {
+    vault_id: currentManifest.vault_id,
+    requested_ids: allIds
+  });
+  appendAuditLog('success', `[VAULT] Requested full download of all ${allIds.length} file(s).`);
+  closeVaultShelf();
+}
+
+function copyWiresharkFilter() {
+  const filterText = 'tcp.port == 5500 && frame contains "SV"';
+  navigator.clipboard.writeText(filterText).then(() => {
+    appendAuditLog('system', `[WIRESHARK] Copied filter to clipboard: ${filterText}`);
+  });
+}

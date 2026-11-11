@@ -8,7 +8,7 @@ echo.
 echo  Step 1: Compiling app.py with PyInstaller (including Liquidmorphism Frontend)...
 echo.
 
-python -m PyInstaller --noconfirm --onedir --windowed --name "SecureVault_Cyber_Liquid" --add-data "frontend;frontend" --hidden-import "uvicorn" --hidden-import "uvicorn.logging" --hidden-import "uvicorn.loops" --hidden-import "uvicorn.loops.auto" --hidden-import "uvicorn.protocols" --hidden-import "uvicorn.protocols.http" --hidden-import "uvicorn.protocols.http.auto" --hidden-import "uvicorn.protocols.websockets" --hidden-import "uvicorn.protocols.websockets.auto" --hidden-import "uvicorn.lifespans" --hidden-import "uvicorn.lifespans.on" --hidden-import "fastapi" --hidden-import "websockets" app.py
+python -m PyInstaller --noconfirm --onedir --windowed --name "SecureVault_Cyber_Liquid" --add-data "frontend;frontend" --hidden-import "uvicorn" --hidden-import "uvicorn.logging" --hidden-import "uvicorn.loops" --hidden-import "uvicorn.loops.auto" --hidden-import "uvicorn.protocols" --hidden-import "uvicorn.protocols.http" --hidden-import "uvicorn.protocols.http.auto" --hidden-import "uvicorn.protocols.websockets" --hidden-import "uvicorn.protocols.websockets.auto" --hidden-import "uvicorn.lifespans" --hidden-import "uvicorn.lifespans.on" --hidden-import "fastapi" --hidden-import "websockets" --hidden-import "backend.threat_scanner" --hidden-import "backend.lan_discovery" app.py
 
 if %ERRORLEVEL% equ 0 (
     echo.

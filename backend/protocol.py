@@ -27,10 +27,13 @@ class FrameType(IntEnum):
     FILE_START = 0x20
     FILE_CHUNK = 0x21
     FILE_END = 0x22
+    VAULT_MANIFEST = 0x23  # Phase 4: Multi-File Catalog
+    FILE_PULL_REQ = 0x24   # Phase 4: Selective Download Request
 
-    # Control Frames
+    # Control / Threat / Demo Frames
     PING = 0x30
     PONG = 0x31
+    SECURITY_ALERT = 0x40
     DISCONNECT = 0xFF
 
 
