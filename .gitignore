@@ -8,6 +8,11 @@ build/
 dist/
 *.spec
 *.zip
+SecureVault_LAN_v2.0_Windows_x64/
+SecureVault_LAN_v3.0_Windows_x64/
+_temp_staging/
+quarantine/*
+!quarantine/.gitkeep
 
 # Received files during file transfer testing
 received_files/*

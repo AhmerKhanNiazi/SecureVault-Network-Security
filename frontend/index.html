@@ -3,310 +3,594 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SecureVault LAN - Encrypted Transport &amp; Visual Protocol</title>
+  <title>SecureVault LAN - Encrypted Transport &amp; Visual Protocol Suite v3.0</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300ff88'%3E%3Cpath d='M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=3.0">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css?v=5.0">
 </head>
 <body class="theme-cyber-dark">
 
-  <!-- Interactive Liquid Mouse Glow Follower -->
+  <!-- Interactive Liquid Mouse Glow -->
   <div class="cursor-liquid-glow" id="cursorGlow"></div>
 
-  <!-- Liquid Ambient Background Glows -->
+  <!-- Ambient Light Orbs -->
   <div class="ambient-glow orb-1"></div>
   <div class="ambient-glow orb-2"></div>
   <div class="ambient-glow orb-3"></div>
-  <div class="ambient-glow orb-4"></div>
 
-  <div class="app-container">
+  <!-- Main Root Layout: Sidebar + Main Content -->
+  <div class="app-layout">
     
-    <!-- Top HUD Navigation -->
-    <header class="glass-header">
-      <div class="logo-group">
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="sidebar glass-panel">
+      <!-- App Brand -->
+      <div class="sidebar-brand">
         <div class="shield-badge">
           <svg viewBox="0 0 24 24" class="shield-icon" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
           </svg>
         </div>
-        <div>
-          <h1 class="logo-title">SECUREVAULT <span class="neon-text">LAN</span></h1>
-          <p class="logo-subtitle">HYBRID CRYPTO TRANSPORT &amp; WIRESHARK PROTOCOL INSPECTOR</p>
+        <div class="brand-text">
+          <span class="brand-title">SECUREVAULT</span>
+          <span class="brand-edition">LAN ENTERPRISE v3.0</span>
         </div>
       </div>
 
-      <!-- Live System Status Badge (HCI Heuristic #1) -->
-      <div class="header-status-box">
-        <div class="status-indicator" id="statusIndicator">
-          <span class="status-ping-ring"></span>
-          <span class="status-dot"></span>
-        </div>
-        <div class="status-meta">
-          <span class="status-label" id="statusText">SYSTEM IDLE</span>
-          <span class="status-sub" id="peerText">NO ACTIVE PEER</span>
-        </div>
-      </div>
-
-      <!-- Presentation Demo Toggles Deck -->
-      <div class="demo-toggles-deck">
-        <!-- Toggle 1: Encryption Mode (AES-256 vs Plaintext Wireshark) -->
-        <div class="security-toggle-container">
-          <label class="toggle-switch">
-            <input type="checkbox" id="securityModeToggle" checked>
-            <span class="toggle-slider">
-              <span class="toggle-knob"></span>
-            </span>
-          </label>
-          <div class="toggle-label-box">
-            <span class="mode-title" id="modeTitle">&#x1F510; AES-256 SECURE</span>
-            <span class="mode-desc" id="modeDesc">Ciphertext Active</span>
-          </div>
-        </div>
-
-        <!-- Toggle 2: Anti-Malware Shield (Active vs Bypass) -->
-        <div class="security-toggle-container">
-          <label class="toggle-switch">
-            <input type="checkbox" id="malwareShieldToggle" checked onchange="handleMalwareToggle(this)">
-            <span class="toggle-slider">
-              <span class="toggle-knob"></span>
-            </span>
-          </label>
-          <div class="toggle-label-box">
-            <span class="mode-title" id="malwareShieldTitle">&#x1F6E1;&#xFE0F; MALWARE SHIELD</span>
-            <span class="mode-desc" id="malwareShieldDesc">Active &bull; Quarantine</span>
-          </div>
-        </div>
-
-        <!-- Toggle 3: Integrity Tamper Injector (Off vs 1-Bit Corruption) -->
-        <div class="security-toggle-container tamper-toggle-box">
-          <label class="toggle-switch alert-switch">
-            <input type="checkbox" id="tamperToggle" onchange="handleTamperToggle(this)">
-            <span class="toggle-slider">
-              <span class="toggle-knob"></span>
-            </span>
-          </label>
-          <div class="toggle-label-box">
-            <span class="mode-title" id="tamperTitle">&#x2694;&#xFE0F; TAMPER DEMO</span>
-            <span class="mode-desc" id="tamperDesc">Off &bull; Clean Stream</span>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <!-- Hero Section: Dynamic 60FPS Data Traveling Pipeline Canvas -->
-    <section class="pipeline-section glass-panel">
-      <div class="pipeline-header">
-        <div class="pipeline-title">
-          <span class="pulse-icon"></span>
-          LIVE LAN TRANSMISSION PIPELINE &amp; DATA STREAM
-          <div class="cyber-spectrum">
-            <span class="spec-bar"></span>
-            <span class="spec-bar"></span>
-            <span class="spec-bar"></span>
-            <span class="spec-bar"></span>
-            <span class="spec-bar"></span>
-          </div>
-        </div>
-        <div class="pipeline-telemetry" id="pipelineTelemetry">
-          IDLE &bull; READY FOR DATA INJECTION
-        </div>
-      </div>
-      <div class="canvas-wrapper">
-        <canvas id="packetCanvas"></canvas>
-      </div>
-    </section>
-
-    <!-- Main Workspace 3-Column Grid -->
-    <main class="dashboard-grid">
-      
-      <!-- COLUMN 1: LAN Node Control & Crypto Vault Status -->
-      <section class="grid-card glass-panel" id="controlPanel">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="icon">&#x26A1;</span> NODE CONTROLLER
-          </div>
-          <span class="badge-pill" id="localIpBadge">IP: Detecting...</span>
-        </div>
-
-        <!-- Role Selector Tabs (FIX BUG-016: proper tab structure) -->
-        <div class="role-tabs">
-          <button class="tab-btn active" id="tabServer" onclick="switchRole('server')">
-            <span class="tab-icon">&#x1F5A7;</span>
-            <span class="tab-label">HOST SERVER</span>
-          </button>
-          <button class="tab-btn" id="tabClient" onclick="switchRole('client')">
-            <span class="tab-icon">&#x1F517;</span>
-            <span class="tab-label">CONNECT CLIENT</span>
-          </button>
-        </div>
-
-        <!-- Connection Parameters Form -->
-        <div class="form-group" id="ipFieldGroup" style="display: none;">
-          <label class="input-label">REMOTE SERVER IP</label>
-          <input type="text" id="targetIpInput" class="glass-input" value="127.0.0.1" placeholder="e.g. 192.168.1.15">
-        </div>
-
-        <div class="form-group">
-          <label class="input-label">LAN PORT (TCP)</label>
-          <input type="number" id="portInput" class="glass-input" value="5500" min="1024" max="65535">
-        </div>
-
-        <button id="actionBtn" class="glow-button primary-btn" onclick="handlePrimaryAction()">
-          <span class="btn-shimmer"></span>
-          <span class="btn-text">INITIALIZE SECURE SERVER</span>
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="devices" onclick="switchTab('devices')">
+          <span class="nav-icon">&#x1F4E1;</span>
+          <span class="nav-label">Radar &amp; Devices</span>
+          <span class="nav-badge" id="peerCountBadge">0</span>
         </button>
 
-        <!-- AirShare Zero-Config Auto-Discovery Radar (Phase 3) -->
-        <div class="lan-radar-box">
-          <div class="radar-header">
-            <div class="radar-title-group">
-              <span class="radar-pulse-dot"></span>
-              <span class="radar-title">AIRSHARE RADAR (UDP 5555)</span>
-            </div>
-            <span class="badge-pill" id="peerCountBadge">0 Online</span>
-          </div>
-          <div class="radar-peers-list" id="radarPeersList">
-            <div class="radar-empty">Searching subnet for active SecureVault peers...</div>
-          </div>
+        <button class="nav-item" data-tab="transfers" onclick="switchTab('transfers')">
+          <span class="nav-icon">&#x1F4E6;</span>
+          <span class="nav-label">Transfer Hub</span>
+          <span class="nav-pulse-dot" id="transferActiveDot" style="display:none;"></span>
+        </button>
+
+        <button class="nav-item" data-tab="chat" onclick="switchTab('chat')">
+          <span class="nav-icon">&#x1F4AC;</span>
+          <span class="nav-label">Secure Chat</span>
+          <span class="nav-badge msg-badge" id="chatUnreadBadge" style="display:none;">0</span>
+        </button>
+
+        <button class="nav-item" data-tab="security" onclick="switchTab('security')">
+          <span class="nav-icon">&#x1F6E1;&#xFE0F;</span>
+          <span class="nav-label">Malware Shield</span>
+        </button>
+
+        <button class="nav-item" data-tab="inspector" onclick="switchTab('inspector')">
+          <span class="nav-icon">&#x1F52C;</span>
+          <span class="nav-label">Packet Inspector</span>
+        </button>
+
+        <button class="nav-item" data-tab="settings" onclick="switchTab('settings')">
+          <span class="nav-icon">&#x2699;&#xFE0F;</span>
+          <span class="nav-label">Settings</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Footer: Current Node Status Widget -->
+      <div class="sidebar-node-card">
+        <div class="node-card-header">
+          <span class="node-pulse-indicator" id="nodeStatusDot"></span>
+          <span class="node-title" id="sidebarNodeStatus">NODE IDLE</span>
+        </div>
+        <div class="node-meta-row">
+          <span class="node-label">LOCAL IP:</span>
+          <span class="node-value" id="sidebarLocalIp">127.0.0.1</span>
+        </div>
+        <div class="node-meta-row">
+          <span class="node-label">PEER:</span>
+          <span class="node-value" id="sidebarPeerIp">None</span>
+        </div>
+        <div class="node-meta-row">
+          <span class="node-label">CIPHER:</span>
+          <span class="node-value cipher-val" id="sidebarCipherMode">AES-256-GCM</span>
+        </div>
+        <button class="disconnect-btn" id="sidebarDisconnectBtn" onclick="disconnectNode()" style="display: none;">
+          &#x2715; DISCONNECT
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN VIEW AREA -->
+    <main class="main-content">
+      
+      <!-- Top HUD Bar: Page Header & Global Demo Switches -->
+      <header class="top-hud glass-panel">
+        <div class="page-title-box">
+          <h2 class="page-title" id="pageTitle">Radar &amp; Device Mesh</h2>
+          <p class="page-desc" id="pageDesc">Zero-Config AirShare Peer Discovery on UDP 5555</p>
         </div>
 
-        <!-- Cryptographic Telemetry Card -->
-        <div class="crypto-meta-card">
-          <div class="crypto-meta-title">&#x1F512; CRYPTOGRAPHIC LAYER</div>
+        <!-- Global Security & Presentation Controls -->
+        <div class="top-controls-deck">
+          <!-- Switch 1: Crypto Mode -->
+          <div class="hud-toggle-pill" title="Toggle between AES-256-GCM and Plaintext Wireshark Demonstration">
+            <label class="switch-control">
+              <input type="checkbox" id="securityModeToggle" checked onchange="handleSecurityModeToggle(this)">
+              <span class="slider"></span>
+            </label>
+            <div class="hud-toggle-labels">
+              <span class="toggle-name" id="modeTitle">&#x1F510; AES-256</span>
+              <span class="toggle-sub" id="modeDesc">Ciphertext Active</span>
+            </div>
+          </div>
+
+          <!-- Switch 2: Malware Shield -->
+          <div class="hud-toggle-pill" title="Toggle real-time Antivirus & AMSI inspection">
+            <label class="switch-control">
+              <input type="checkbox" id="malwareShieldToggle" checked onchange="handleMalwareToggle(this)">
+              <span class="slider"></span>
+            </label>
+            <div class="hud-toggle-labels">
+              <span class="toggle-name" id="malwareShieldTitle">&#x1F6E1;&#xFE0F; SHIELD</span>
+              <span class="toggle-sub" id="malwareShieldDesc">Quarantine Active</span>
+            </div>
+          </div>
+
+          <!-- Switch 3: Tamper Demo -->
+          <div class="hud-toggle-pill alert-pill" title="Demonstrate Man-in-the-Middle 1-bit corruption detection">
+            <label class="switch-control alert-switch">
+              <input type="checkbox" id="tamperToggle" onchange="handleTamperToggle(this)">
+              <span class="slider"></span>
+            </label>
+            <div class="hud-toggle-labels">
+              <span class="toggle-name" id="tamperTitle">&#x2694;&#xFE0F; TAMPER</span>
+              <span class="toggle-sub" id="tamperDesc">Clean Stream</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- TAB 1: RADAR & DEVICES PAGE -->
+      <section class="tab-page active" id="tabDevices">
+        <div class="tab-grid-2col">
           
-          <div class="meta-row">
-            <span class="meta-key">Key Exchange:</span>
-            <span class="meta-val neon-accent">RSA-2048 (OAEP-SHA256)</span>
-          </div>
-          <div class="meta-row">
-            <span class="meta-key">Data Cipher:</span>
-            <span class="meta-val neon-accent" id="activeCipherLabel">AES-256-GCM (Authenticated)</span>
-          </div>
-          <div class="meta-row">
-            <span class="meta-key">File Integrity:</span>
-            <span class="meta-val neon-accent">SHA-256 Checksum</span>
-          </div>
-          <div class="meta-row">
-            <span class="meta-key">Session Key:</span>
-            <!-- FIX BUG-007: element ID corrected to match JS reference -->
-            <span class="meta-val monospace-val" id="sessionFpVal">NOT NEGOTIATED</span>
-          </div>
-        </div>
+          <!-- Column A: AirShare Mesh Radar Grid -->
+          <div class="content-card glass-panel flex-1">
+            <div class="card-header-bar">
+              <div class="header-with-pulse">
+                <span class="radar-ping-dot"></span>
+                <span class="card-heading">AIRSHARE ZERO-CONFIG RADAR</span>
+              </div>
+              <span class="card-sub-pill" id="discoveredCountText">0 Online Devices</span>
+            </div>
+            
+            <p class="section-hint">Automatic UDP beacon mesh discovery. Any SecureVault node on your Wi-Fi/LAN appears instantly.</p>
 
-        <!-- Wireshark Demo Guide Pill -->
-        <div class="demo-hint-box">
-          <div class="hint-title">&#x1F4A1; WIRESHARK DEMO TIP</div>
-          <p class="hint-text">Filter: <code>tcp.port == 5500</code>. Toggle above switch to Plaintext to inspect cleartext packets!</p>
+            <div class="discovered-peers-grid" id="discoveredPeersGrid">
+              <!-- Dynamically populated peer cards -->
+              <div class="empty-peers-notice" id="emptyPeersNotice">
+                <span class="radar-scan-icon">&#x1F4E1;</span>
+                <span class="empty-title">Scanning Local Subnet...</span>
+                <span class="empty-desc">Open SecureVault on another PC or launch a second client instance to discover.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column B: Direct Connect & Server Controller -->
+          <div class="side-controller-stack">
+            <!-- Card 1: Direct TCP Connect -->
+            <div class="content-card glass-panel">
+              <div class="card-header-bar">
+                <span class="card-heading">&#x1F517; DIRECT IP CONNECT</span>
+              </div>
+              <p class="section-hint">Manually connect to any specific IP and port on LAN or localhost.</p>
+              
+              <div class="input-form-group">
+                <label class="input-label">TARGET IP ADDRESS</label>
+                <input type="text" class="cyber-input" id="clientHostInput" value="127.0.0.1" placeholder="e.g. 192.168.1.115">
+              </div>
+
+              <div class="input-form-group">
+                <label class="input-label">TARGET PORT (TCP)</label>
+                <input type="number" class="cyber-input" id="clientPortInput" value="5500" placeholder="5500">
+              </div>
+
+              <button class="glow-button primary-btn w-100" id="connectClientBtn" onclick="connectDirectClient()">
+                &#x27A4; CONNECT AS CLIENT
+              </button>
+            </div>
+
+            <!-- Card 2: Server Host Controller -->
+            <div class="content-card glass-panel">
+              <div class="card-header-bar">
+                <span class="card-heading">&#x26A1; HOST SECURE SERVER</span>
+              </div>
+              <p class="section-hint">Run this machine as the central listener with ephemeral RSA-2048 keys.</p>
+
+              <div class="input-form-group">
+                <label class="input-label">LISTEN PORT (TCP)</label>
+                <input type="number" class="cyber-input" id="serverPortInput" value="5500">
+              </div>
+
+              <button class="glow-button accent-btn w-100" id="startServerBtn" onclick="startHostServer()">
+                &#x25B6; INITIALIZE SECURE SERVER
+              </button>
+            </div>
+          </div>
+
         </div>
       </section>
 
-      <!-- COLUMN 2: Secure Chat & File Transfer Vault -->
-      <section class="grid-card glass-panel" id="transferVault">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="icon">&#x1F4AC;</span> SECURE MESSAGING &amp; FILE VAULT
+      <!-- TAB 2: TRANSFER HUB PAGE (FILE SHARING & CONSENT) -->
+      <section class="tab-page" id="tabTransfers">
+        
+        <!-- Interactive Incoming Transfer Consent Card (Appears on incoming file) -->
+        <div class="incoming-consent-banner glass-panel" id="incomingConsentCard" style="display: none;">
+          <div class="consent-left">
+            <div class="consent-pulse-icon">&#x1F4E5;</div>
+            <div class="consent-meta">
+              <div class="consent-title">INCOMING FILE TRANSFER PROPOSAL</div>
+              <div class="consent-details">
+                <span class="file-name-highlight" id="incomingFileName">presentation.mp4</span>
+                <span class="dot-sep">&bull;</span>
+                <span class="file-size-highlight" id="incomingFileSize">45.2 MB</span>
+                <span class="dot-sep">&bull;</span>
+                <span class="file-sender-highlight" id="incomingSender">From: 192.168.1.115</span>
+              </div>
+              <div class="consent-target">Saving to: <code id="incomingTargetFolder">C:\...\received_files</code></div>
+            </div>
           </div>
-          <span class="badge-pill" id="vaultStatusBadge">STANDBY</span>
+          <div class="consent-actions">
+            <button class="glow-button success-btn" onclick="acceptIncomingTransfer()">&#x2705; ACCEPT</button>
+            <button class="glow-button save-as-btn" onclick="saveAsIncomingTransfer()">&#x1F4C1; SAVE AS...</button>
+            <button class="ghost-btn cancel-btn" onclick="declineIncomingTransfer()">&#x2715; DECLINE</button>
+          </div>
         </div>
 
-        <!-- Chat Conversation Area -->
-        <div class="chat-viewport" id="chatViewport">
-          <div class="empty-chat-placeholder">
-            <div class="placeholder-icon">&#x1F6E1;&#xFE0F;</div>
-            <div>Start server or connect to peer to begin encrypted transmission.</div>
+        <!-- Transfer Actions Grid -->
+        <div class="transfer-workspace-grid">
+          
+          <!-- Column 1: Send File Drag & Drop Zone -->
+          <div class="content-card glass-panel">
+            <div class="card-header-bar">
+              <span class="card-heading">&#x1F4C2; SEND FILES VIA ENCRYPTED STREAM</span>
+            </div>
+            
+            <!-- Drag and Drop Dropzone -->
+            <div class="drag-drop-zone" id="dropZone">
+              <div class="drop-icon">&#x1F4E4;</div>
+              <div class="drop-title">DRAG &amp; DROP FILES HERE</div>
+              <div class="drop-subtitle">or select native Windows dialog (Zero-Fakepath Guaranteed)</div>
+              
+              <div class="drop-buttons-row">
+                <button class="glow-button mini-btn" type="button" onclick="triggerNativeFilePick()">
+                  &#x1F4C2; SELECT FILE (NATIVE)
+                </button>
+                <button class="ghost-btn mini-ghost" type="button" onclick="triggerNativeMultiFilePick()">
+                  &#x1F4E6; SELECT MULTIPLE (VAULT)
+                </button>
+              </div>
+
+              <!-- Hidden direct browser file input for drag & drop fallback -->
+              <input type="file" id="browserFileInput" style="display: none;" onchange="handleBrowserFileSelected(this)">
+            </div>
+
+            <!-- Active Staged File Preview (if selected) -->
+            <div class="staged-file-card" id="stagedFileCard" style="display: none;">
+              <div class="staged-info">
+                <span class="staged-icon">&#x1F4C4;</span>
+                <div class="staged-names">
+                  <span class="staged-filename" id="stagedFilename">sample.pdf</span>
+                  <span class="staged-size" id="stagedFilesize">12.4 MB</span>
+                </div>
+              </div>
+              <button class="glow-button primary-btn mini-btn" id="sendStagedBtn" onclick="sendStagedFile()">
+                STREAM NOW &#x27A4;
+              </button>
+            </div>
+
+            <!-- Remote Multi-File Vault Shelf (Selective Download) -->
+            <div class="vault-manifest-card" id="vaultShelf" style="display: none;">
+              <div class="vault-shelf-header">
+                <div>
+                  <span class="vault-tag">MULTI-FILE VAULT</span>
+                  <span class="vault-title" id="vaultTitle">Catalog Received</span>
+                </div>
+                <button class="ghost-btn mini-ghost" onclick="closeVaultShelf()">&#x2715;</button>
+              </div>
+              <div class="vault-items-list" id="vaultItemsList"></div>
+              <div class="vault-shelf-actions">
+                <button class="glow-button mini-btn" onclick="downloadSelectedVaultFiles()">DOWNLOAD SELECTED</button>
+                <button class="ghost-btn mini-ghost" onclick="downloadAllVaultFiles()">DOWNLOAD ALL</button>
+              </div>
+            </div>
+
+            <!-- Active Streaming Wave Progress Vessel -->
+            <div class="transfer-progress-vessel" id="progressVessel" style="display: none;">
+              <div class="progress-info-row">
+                <span class="prog-direction" id="progDirection">STREAMING:</span>
+                <span class="prog-file-name" id="progFileName">document.pdf</span>
+                <span class="prog-percentage" id="progPercentage">0%</span>
+              </div>
+              <div class="progress-track">
+                <div class="liquid-wave-fill" id="liquidWaveFill"></div>
+              </div>
+              <div class="progress-stats-row">
+                <span class="progress-bytes-meta" id="progBytesMeta">0 / 0 KB</span>
+                <span class="progress-speed" id="progSpeedMeta">0.0 MB/s</span>
+              </div>
+            </div>
+
           </div>
+
+          <!-- Column 2: Downloaded Files History & Manager -->
+          <div class="content-card glass-panel">
+            <div class="card-header-bar">
+              <span class="card-heading">&#x1F4E5; DOWNLOADED FILES &amp; INTEGRITY LOG</span>
+              <button class="ghost-btn mini-ghost" onclick="openDownloadsFolder()">&#x1F4C2; OPEN FOLDER</button>
+            </div>
+            
+            <p class="section-hint">Every received file is verified against rolling SHA-256 and scanned for threats before completion.</p>
+
+            <div class="downloaded-files-table-container">
+              <table class="cyber-table" id="transfersHistoryTable">
+                <thead>
+                  <tr>
+                    <th>FILE NAME</th>
+                    <th>SIZE</th>
+                    <th>INTEGRITY</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody id="transfersHistoryBody">
+                  <tr class="empty-row" id="emptyTransfersRow">
+                    <td colspan="4">No files transferred in this session yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
         </div>
+      </section>
 
-        <!-- Message Input Row -->
-        <div class="chat-input-bar">
-          <input type="text" id="chatInput" class="glass-input chat-input" placeholder="Type secret message..." onkeypress="handleChatKeyPress(event)">
-          <button class="glow-button mini-btn" onclick="sendMessage()">
-            <span>SEND</span>
-          </button>
+      <!-- TAB 3: SECURE CHAT PAGE -->
+      <section class="tab-page" id="tabChat">
+        <div class="chat-page-container glass-panel">
+          
+          <div class="chat-header-bar">
+            <div class="chat-peer-info">
+              <span class="chat-peer-title" id="chatPeerTitle">Chat with LAN Peer</span>
+              <span class="chat-security-pill" id="chatSecurityPill">&#x1F510; AES-256-GCM SECURE</span>
+            </div>
+            <button class="ghost-btn mini-ghost" onclick="clearChatTimeline()">CLEAR CHAT</button>
+          </div>
+
+          <div class="chat-timeline" id="chatTimeline">
+            <div class="chat-welcome-notice">
+              <span class="shield-mini-icon">&#x1F6E1;&#xFE0F;</span>
+              <span>Messages are encrypted with ephemeral 256-bit AES session keys before entering the network.</span>
+            </div>
+          </div>
+
+          <form class="chat-input-bar" id="chatForm" onsubmit="handleSendChatMessage(event)">
+            <input type="text" class="cyber-input chat-input-field" id="chatInput" placeholder="Type encrypted message (e.g. Confidential passwords, keys, notes)..." autocomplete="off">
+            <button class="glow-button primary-btn chat-send-btn" type="submit">SEND &#x27A4;</button>
+          </form>
+
         </div>
+      </section>
 
-        <!-- File Transfer Vessel & Dropzone -->
-        <div class="file-transfer-box">
-          <!-- FIX BUG-009: guard click with connection check via JS -->
-          <div class="file-dropzone" id="fileDropzone">
-            <input type="file" id="fileInputEl" style="display: none;" onchange="handleFileSelected(event)">
-            <input type="file" id="fileInputMultiEl" multiple style="display: none;" onchange="handleMultiFilesSelected(event)">
-            <div class="drop-icon" onclick="triggerFileInput()">&#x1F4C1;</div>
-            <div class="drop-title" id="dropTitle" onclick="triggerFileInput()">DROP CONFIDENTIAL FILE OR CLICK TO BROWSE</div>
-            <div class="drop-sub" id="dropSub">AES-256 Encrypted Chunk Streaming &bull; Rolling SHA-256 Checksum</div>
-            <div class="drop-actions-row">
-              <button class="ghost-btn mini-ghost" type="button" onclick="triggerFileInput()">&#x1F4C4; SINGLE FILE</button>
-              <button class="glow-button mini-btn" type="button" onclick="triggerMultiFileInput()">&#x1F4E6; SHARE MULTI-FILES</button>
+      <!-- TAB 4: MALWARE SHIELD & SECURITY CENTER PAGE -->
+      <section class="tab-page" id="tabSecurity">
+        <div class="security-center-grid">
+          
+          <!-- Column A: Threat Engine Cards -->
+          <div class="content-card glass-panel">
+            <div class="card-header-bar">
+              <span class="card-heading">&#x1F6E1;&#xFE0F; REAL-TIME THREAT SCANNER</span>
+              <span class="status-shield-active" id="shieldActiveBadge">ACTIVE &amp; ENFORCED</span>
+            </div>
+            
+            <p class="section-hint">Multi-tier heuristic scanner protects against malicious network drops.</p>
+
+            <div class="threat-features-list">
+              <div class="threat-feature-item">
+                <span class="feat-icon">&#x2714;</span>
+                <div class="feat-meta">
+                  <span class="feat-title">Standard EICAR Pattern Detection</span>
+                  <span class="feat-desc">Traps standard antivirus test signatures before write to disk.</span>
+                </div>
+              </div>
+
+              <div class="threat-feature-item">
+                <span class="feat-icon">&#x2714;</span>
+                <div class="feat-meta">
+                  <span class="feat-title">Executable &amp; Script Blocklist</span>
+                  <span class="feat-desc">Direct transmission of .exe, .bat, .ps1, .vbs is blocked and isolated.</span>
+                </div>
+              </div>
+
+              <div class="threat-feature-item">
+                <span class="feat-icon">&#x2714;</span>
+                <div class="feat-meta">
+                  <span class="feat-title">Double-Extension Deception Trap</span>
+                  <span class="feat-desc">Intercepts phishing payloads disguised as documents (e.g. <code>invoice.pdf.exe</code>).</span>
+                </div>
+              </div>
+
+              <div class="threat-feature-item">
+                <span class="feat-icon">&#x2714;</span>
+                <div class="feat-meta">
+                  <span class="feat-title">MZ Header File Signature Inspection</span>
+                  <span class="feat-desc">Catches Windows executables disguised as image/video extensions.</span>
+                </div>
+              </div>
+
+              <div class="threat-feature-item">
+                <span class="feat-icon">&#x2714;</span>
+                <div class="feat-meta">
+                  <span class="feat-title">Windows Antimalware Scan Interface (AMSI)</span>
+                  <span class="feat-desc">Deep in-memory buffer scan via Microsoft Defender integration.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quarantine Records -->
+            <div class="quarantine-section">
+              <div class="quarantine-header">
+                <span class="quarantine-title">&#x26A0;&#xFE0F; QUARANTINED INCIDENTS</span>
+                <button class="ghost-btn mini-ghost" onclick="openQuarantineFolder()">OPEN QUARANTINE</button>
+              </div>
+              <div class="quarantine-list" id="quarantineList">
+                <div class="empty-quarantine">0 Threats Quarantined. System Secure.</div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Column B: Cryptographic Engine Specs -->
+          <div class="content-card glass-panel">
+            <div class="card-header-bar">
+              <span class="card-heading">&#x1F510; CRYPTOGRAPHIC SPECIFICATIONS</span>
+            </div>
+
+            <div class="crypto-specs-table">
+              <div class="spec-row">
+                <span class="spec-key">Key Exchange:</span>
+                <span class="spec-value">RSA-2048 with OAEP (SHA-256 Digest)</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-key">Symmetric Stream Cipher:</span>
+                <span class="spec-value">AES-256-GCM (Authenticated Encryption)</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-key">Data Integrity Seal:</span>
+                <span class="spec-value">On-The-Fly Rolling SHA-256 Checksum</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-key">Replay Attack Protection:</span>
+                <span class="spec-value">12-Byte Cryptographic Nonce per Frame</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-key">Session Fingerprint:</span>
+                <span class="spec-value code-font" id="cryptoSessionFingerprint">Unnegotiated</span>
+              </div>
+            </div>
+
+            <!-- Tamper Demonstration Card -->
+            <div class="tamper-box">
+              <div class="tamper-box-header">
+                <span class="tamper-box-title">&#x2694;&#xFE0F; MAN-IN-THE-MIDDLE TAMPER SIMULATION</span>
+              </div>
+              <p class="tamper-box-text">
+                Enabling Tamper Demo simulates a hacker intercepting the packet stream and flipping 1 bit of encrypted ciphertext.
+                The receiver's AES-GCM Authentication Tag check immediately detects the corruption and drops the packet.
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 5: PROTOCOL & PACKET INSPECTOR PAGE -->
+      <section class="tab-page" id="tabInspector">
+        <div class="content-card glass-panel inspector-card">
+          <div class="card-header-bar">
+            <div class="header-with-title">
+              <span class="card-heading">&#x1F52C; WIRESHARK-GRADE PACKET TELEMETRY</span>
+              <span class="telemetry-counter" id="packetCountBadge">0 Packets</span>
+            </div>
+            <div class="inspector-filter-buttons">
+              <button class="filter-btn active" data-filter="all" onclick="filterPackets('all')">ALL</button>
+              <button class="filter-btn" data-filter="HANDSHAKE" onclick="filterPackets('HANDSHAKE')">HANDSHAKE</button>
+              <button class="filter-btn" data-filter="MSG" onclick="filterPackets('MSG')">TEXT</button>
+              <button class="filter-btn" data-filter="FILE" onclick="filterPackets('FILE')">FILES</button>
+              <button class="filter-btn" data-filter="ALERT" onclick="filterPackets('ALERT')">ALERTS</button>
+              <button class="ghost-btn mini-ghost" onclick="clearPacketTelemetry()">CLEAR</button>
             </div>
           </div>
 
-          <!-- Multi-File Staging & Selective Download Shelf (Phase 4) -->
-          <div class="vault-shelf-box" id="vaultShelfBox" style="display: none;">
-            <div class="vault-shelf-header">
-              <span class="vault-shelf-title" id="vaultShelfTitle">&#x1F4E6; MULTI-FILE VAULT CATALOG</span>
-              <button class="ghost-btn mini-ghost" type="button" onclick="closeVaultShelf()">&#x2715; CLOSE</button>
+          <div class="telemetry-feed-container" id="telemetryFeed">
+            <div class="telemetry-empty-notice" id="emptyTelemetryNotice">
+              Listening for LAN protocol frames...
             </div>
-            <div class="vault-items-list" id="vaultItemsList">
-              <!-- Dynamically populated items with checkboxes -->
-            </div>
-            <div class="vault-shelf-actions" id="vaultShelfActions">
-              <button class="glow-button mini-btn" id="vaultPullBtn" type="button" onclick="downloadSelectedVaultFiles()">DOWNLOAD SELECTED</button>
-              <button class="ghost-btn mini-ghost" type="button" onclick="downloadAllVaultFiles()">DOWNLOAD ALL</button>
-            </div>
-          </div>
-
-          <!-- Liquid Wave Progress Vessel -->
-          <div class="liquid-progress-container" id="progressVessel" style="display: none;">
-            <div class="progress-info-row">
-              <span class="prog-file-name" id="progFileName">document.pdf</span>
-              <span class="prog-percentage" id="progPercentage">0%</span>
-            </div>
-            <div class="progress-track">
-              <div class="liquid-wave-fill" id="liquidWaveFill"></div>
-            </div>
-            <div class="progress-bytes-meta" id="progBytesMeta">0 / 0 KB</div>
           </div>
         </div>
       </section>
 
-      <!-- COLUMN 3: Live Security Audit & Raw Hex Stream -->
-      <section class="grid-card glass-panel" id="auditPanel">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="icon">&#x1F52C;</span> LIVE SECURITY AUDIT &amp; HEX TELEMETRY
-          </div>
-          <button class="ghost-btn" onclick="clearAuditLog()">CLEAR</button>
-        </div>
+      <!-- TAB 6: SETTINGS & PREFERENCES PAGE -->
+      <section class="tab-page" id="tabSettings">
+        <div class="settings-grid">
+          
+          <div class="content-card glass-panel">
+            <div class="card-header-bar">
+              <span class="card-heading">&#x1F4C1; STORAGE &amp; DOWNLOAD DIRECTORY</span>
+            </div>
+            
+            <p class="section-hint">Choose where received files are automatically or manually saved on your machine.</p>
 
-        <!-- Raw Cryptogram Inspector -->
-        <div class="hex-stream-container" id="hexStream">
-          <div class="hex-line system-line">[SYSTEM] Cryptographic engine initialized and waiting for socket events...</div>
-        </div>
+            <div class="setting-row">
+              <label class="setting-label">CURRENT DOWNLOAD DIRECTORY</label>
+              <div class="dir-input-group">
+                <input type="text" class="cyber-input dir-input" id="settingsDownloadDirInput" readonly>
+                <button class="glow-button mini-btn" onclick="browseDownloadDirectory()">&#x1F4C2; BROWSE...</button>
+                <button class="ghost-btn mini-ghost" onclick="openDownloadsFolder()">&#x1F4C1; OPEN</button>
+              </div>
+            </div>
 
-        <!-- Integrity Verification Banner -->
-        <div class="integrity-card" id="integrityCard">
-          <div class="integrity-header">
-            <span class="shield-mini">&#x1F6E1;&#xFE0F;</span>
-            <span id="integrityStatusText">INTEGRITY GUARD ACTIVE</span>
+            <div class="setting-row">
+              <label class="setting-label">QUARANTINE VAULT PATH</label>
+              <div class="dir-input-group">
+                <input type="text" class="cyber-input dir-input" id="settingsQuarantineDirInput" readonly>
+                <button class="ghost-btn mini-ghost" onclick="openQuarantineFolder()">&#x1F6E1;&#xFE0F; OPEN</button>
+              </div>
+            </div>
+
           </div>
-          <div class="integrity-body" id="integrityBody">
-            Packets guarded with 128-bit AES-GCM Authentication Tags &amp; SHA-256 Checksums.
+
+          <div class="content-card glass-panel">
+            <div class="card-header-bar">
+              <span class="card-heading">&#x2699;&#xFE0F; SYSTEM PREFERENCES &amp; PORTS</span>
+            </div>
+
+            <div class="setting-toggle-row">
+              <div>
+                <span class="setting-item-title">Transfer Consent Prompt</span>
+                <span class="setting-item-desc">Show interactive Accept / Save As dialog for incoming files (Recommended)</span>
+              </div>
+              <label class="switch-control">
+                <input type="checkbox" id="settingConsentPrompt" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-row">
+              <label class="setting-label">DEVICE BROADCAST NICKNAME</label>
+              <input type="text" class="cyber-input" id="settingDeviceName" placeholder="e.g. Master-PC-Node">
+            </div>
+
+            <div class="setting-row">
+              <label class="setting-label">INTERNAL WEB UI BRIDGE PORT</label>
+              <input type="text" class="cyber-input" id="settingsWebPortDisplay" readonly value="Detecting...">
+            </div>
+
           </div>
+
         </div>
       </section>
 
     </main>
+
   </div>
 
-  <!-- Threat & Malware Alert Modal (Phase 2) -->
+  <!-- Threat Alert Modal -->
   <div class="threat-alert-overlay" id="threatModal" style="display: none;">
     <div class="threat-modal-card glass-panel">
       <div class="threat-modal-header">
         <span class="threat-icon">&#x26A0;&#xFE0F;</span>
-        <span class="threat-title" id="threatModalTitle">CRITICAL SECURITY THREAT INTERCEPTED</span>
+        <span class="threat-title" id="threatModalTitle">SECURITY THREAT INTERCEPTED</span>
       </div>
       <div class="threat-modal-body" id="threatModalBody">
         Standard EICAR Antivirus Test Pattern detected in incoming payload.
@@ -315,11 +599,11 @@
         Action: Quarantined to <code>quarantine/</code> directory with SHA-256 seal.
       </div>
       <div class="threat-modal-footer">
-        <button class="glow-button alert-btn" onclick="closeThreatModal()">ACKNOWLEDGE &amp; SECURE</button>
+        <button class="glow-button alert-btn" onclick="closeThreatModal()">ACKNOWLEDGE &amp; ISOLATE</button>
       </div>
     </div>
   </div>
 
-  <script src="/static/app.js?v=4.0"></script>
+  <script src="/static/app.js?v=5.0"></script>
 </body>
 </html>

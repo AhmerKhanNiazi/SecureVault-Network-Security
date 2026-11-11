@@ -176,6 +176,67 @@ def pick_multi_files_native() -> list:
         return []
 
 
+def pick_directory_native() -> Optional[str]:
+    """Opens native Windows folder selection dialog."""
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        dpath = filedialog.askdirectory(title="Select Destination Folder for Received Files")
+        root.destroy()
+        return dpath if dpath else None
+    except Exception as e:
+        print(f"[BRIDGE] Native directory dialog error: {e}")
+        return None
+
+
+def pick_save_file_native(default_filename: str = "") -> Optional[str]:
+    """Opens native Windows Save As dialog."""
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        fpath = filedialog.asksaveasfilename(
+            title="Save Received File As...",
+            initialfile=default_filename
+        )
+        root.destroy()
+        return fpath if fpath else None
+    except Exception as e:
+        print(f"[BRIDGE] Native save as dialog error: {e}")
+        return None
+
+
+def open_file_in_system(filepath: str) -> bool:
+    """Launches file in its default Windows association."""
+    try:
+        if filepath and os.path.exists(filepath):
+            os.startfile(os.path.abspath(filepath))
+            return True
+    except Exception as e:
+        print(f"[BRIDGE] Failed to open file '{filepath}': {e}")
+    return False
+
+
+def open_folder_in_system(folder_path: str, highlight_file: Optional[str] = None) -> bool:
+    """Opens Windows Explorer at folder or with specific file highlighted."""
+    try:
+        if highlight_file and os.path.exists(highlight_file):
+            import subprocess
+            subprocess.Popen(f'explorer /select,"{os.path.abspath(highlight_file)}"')
+            return True
+        elif folder_path and os.path.exists(folder_path):
+            os.startfile(os.path.abspath(folder_path))
+            return True
+    except Exception as e:
+        print(f"[BRIDGE] Failed to open folder '{folder_path}': {e}")
+    return False
+
+
 # ---------------------------------------------------------------------------
 # Wire LanNode event callbacks → UI broadcast
 # ---------------------------------------------------------------------------
@@ -226,6 +287,7 @@ node.on_packet_event = lambda direction, ftype, mode, length, raw_hex: sync_broa
 # Phase 2 & 4: Threat Alerts and Multi-File Manifest Callbacks
 node.on_threat_detected = lambda report: sync_broadcast("threat_alert", report)
 node.on_vault_manifest = lambda manifest: sync_broadcast("vault_manifest", manifest)
+node.on_file_incoming = lambda meta: sync_broadcast("incoming_transfer", meta)
 
 # Phase 3: Zero-Config LAN Peer Discovery Callbacks
 discovery.on_peer_discovered = lambda peer_info: sync_broadcast("peer_discovered", peer_info)
@@ -252,6 +314,8 @@ async def websocket_endpoint(websocket: WebSocket):
             "session_fingerprint": node.crypto.compute_sha256(node.crypto.session_key)[:16] if node.crypto.session_key else None,
             "tamper_active": node.inject_tamper,
             "scanner_active": node.scanner.is_enabled,
+            "downloads_dir": os.path.abspath(node.downloads_dir),
+            "quarantine_dir": os.path.abspath(node.quarantine_dir),
             "discovered_peers": discovery.get_discovered_peers()
         }
     }))
@@ -387,6 +451,49 @@ async def websocket_endpoint(websocket: WebSocket):
                 requested_ids = cmd.get("requested_ids", [])
                 node.request_file_download(vault_id, requested_ids)
 
+            # Phase 5: Folder / Directory & File System Actions
+            elif action == "pick_download_dir":
+                def _pick_dir_worker():
+                    new_dir = pick_directory_native()
+                    if new_dir:
+                        node.set_downloads_dir(new_dir)
+                        sync_broadcast("downloads_dir_updated", {"downloads_dir": node.downloads_dir})
+                threading.Thread(target=_pick_dir_worker, daemon=True).start()
+
+            elif action == "set_download_dir":
+                new_dir = cmd.get("path")
+                if new_dir:
+                    node.set_downloads_dir(new_dir)
+                    await broadcast_to_ui("downloads_dir_updated", {"downloads_dir": node.downloads_dir})
+
+            elif action == "open_downloads_folder":
+                open_folder_in_system(node.downloads_dir)
+
+            elif action == "open_folder":
+                target_path = cmd.get("path", node.downloads_dir)
+                highlight = cmd.get("highlight")
+                open_folder_in_system(target_path, highlight)
+
+            elif action == "open_file":
+                filepath = cmd.get("path")
+                if filepath:
+                    open_file_in_system(filepath)
+
+            elif action == "save_file_as":
+                filename = cmd.get("filename", "")
+                source_path = cmd.get("path") or os.path.join(node.downloads_dir, filename)
+                def _save_as_thread():
+                    target_file = pick_save_file_native(default_filename=filename)
+                    if target_file and os.path.exists(source_path):
+                        import shutil
+                        try:
+                            shutil.copy2(source_path, target_file)
+                            node.log("SUCCESS", f"File saved as '{os.path.basename(target_file)}' at: {target_file}")
+                            sync_broadcast("file_saved_as", {"original": source_path, "new_path": target_file})
+                        except Exception as e:
+                            node.log("ERROR", f"Failed to save file: {e}")
+                threading.Thread(target=_save_as_thread, daemon=True).start()
+
     except WebSocketDisconnect:
         pass
     except Exception:
@@ -435,6 +542,35 @@ async def upload_and_share_multi(files: List[UploadFile] = File(...)):
 
     success = node.share_multi_files(staged_paths)
     return {"status": "ok" if success else "error", "count": len(staged_paths)}
+
+
+@app.get("/api/pick_file")
+async def api_pick_file():
+    path = pick_file_native()
+    return {"path": path}
+
+
+@app.get("/api/pick_folder")
+async def api_pick_folder():
+    path = pick_directory_native()
+    if path:
+        node.set_downloads_dir(path)
+        sync_broadcast("downloads_dir_updated", {"downloads_dir": node.downloads_dir})
+    return {"path": path, "downloads_dir": node.downloads_dir}
+
+
+@app.post("/api/open_folder")
+async def api_open_folder(path: Optional[str] = None):
+    target = path or node.downloads_dir
+    success = open_folder_in_system(target)
+    return {"status": "ok" if success else "error", "path": target}
+
+
+@app.post("/api/open_file")
+async def api_open_file(payload: Dict[str, Any]):
+    filepath = payload.get("path", "")
+    success = open_file_in_system(filepath)
+    return {"status": "ok" if success else "error", "path": filepath}
 
 
 # ---------------------------------------------------------------------------

@@ -147,6 +147,12 @@ def main():
         print(f"[LAUNCHER] Notice: Requested port {args.web_port} is busy. Automatically switched to open port {web_port}.")
     web_url = f"http://127.0.0.1:{web_port}"
 
+    try:
+        with open(os.path.join(PROJECT_ROOT, "active_url.txt"), "w") as f:
+            f.write(web_url)
+    except Exception:
+        pass
+
     print("=" * 70)
     print("  [+] SECUREVAULT LAN - ENCRYPTED TRANSPORT SUITE")
     print(f"  * Project Root:       {PROJECT_ROOT}")

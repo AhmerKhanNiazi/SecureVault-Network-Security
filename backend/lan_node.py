@@ -73,9 +73,17 @@ class LanNode:
         self.on_packet_event: Optional[Callable[[str, str, str, int, str], None]] = None
         self.on_threat_detected: Optional[Callable[[Dict[str, Any]], None]] = None
         self.on_vault_manifest: Optional[Callable[[Dict[str, Any]], None]] = None
+        self.on_file_incoming: Optional[Callable[[Dict[str, Any]], None]] = None
 
         # Phase 4: Staged files for selective multi-file pull
         self._staged_files: Dict[int, str] = {}
+
+    def set_downloads_dir(self, new_dir: str):
+        """Dynamically changes destination folder for received files."""
+        if new_dir:
+            os.makedirs(new_dir, exist_ok=True)
+            self.downloads_dir = os.path.abspath(new_dir)
+            self.log("INFO", f"Downloads directory configured to: {self.downloads_dir}")
 
     def log(self, level: str, msg: str, details: Optional[Dict[str, Any]] = None):
         if self.on_log:
@@ -365,6 +373,10 @@ class LanNode:
                     self._last_rx_pct = -1.0
                     expected_info = f"Expected SHA-256: {meta.get('sha256', 'Streaming verify')}" if meta.get("sha256") else "Streaming hash mode"
                     self.log("FILE", f"Incoming file transfer: '{meta['filename']}' ({meta['filesize']} bytes). {expected_info}")
+                    if self.on_file_incoming:
+                        meta_with_peer = dict(meta)
+                        meta_with_peer["sender"] = f"{self.peer_address[0]}:{self.peer_address[1]}" if self.peer_address else "Peer"
+                        self.on_file_incoming(meta_with_peer)
 
                 elif frame.frame_type == FrameType.FILE_CHUNK:
                     if self._incoming_file_handle and self._incoming_file_meta:
