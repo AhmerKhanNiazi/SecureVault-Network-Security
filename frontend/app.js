@@ -859,10 +859,19 @@ function setTamperUI(enabled) {
   const toggle = document.getElementById('tamperToggle');
   const title = document.getElementById('tamperTitle');
   const desc = document.getElementById('tamperDesc');
+  const pill = document.getElementById('tamperPill');
 
   if (toggle) toggle.checked = enabled;
-  if (title) title.innerHTML = enabled ? '&#x2694;&#xFE0F; CORRUPTING' : '&#x2694;&#xFE0F; TAMPER';
-  if (desc) desc.innerText = enabled ? '1-Bit Error Active' : 'Clean Stream';
+  if (title) title.innerHTML = enabled ? '&#x26A0;&#xFE0F; SIMULATING MITM' : '&#x1F9EA; INTEGRITY TEST';
+  if (desc) desc.innerText = enabled ? '1-Bit Error Injected' : 'Clean Stream';
+
+  if (pill) {
+    if (enabled) {
+      pill.classList.add('alert-active');
+    } else {
+      pill.classList.remove('alert-active');
+    }
+  }
 }
 
 // -------------------------------------------------------------

@@ -8,6 +8,7 @@ build/
 dist/
 *.spec
 *.zip
+active_url.txt
 SecureVault_LAN_v2.0_Windows_x64/
 SecureVault_LAN_v3.0_Windows_x64/
 _temp_staging/

@@ -410,19 +410,21 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(3, 7, 4, 0.6);
+  background: rgba(3, 7, 4, 0.7);
   border: 1px solid var(--border-neon-faint);
   padding: 6px 14px;
   border-radius: var(--radius-pill);
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
 }
 
 .hud-toggle-pill:hover {
   border-color: var(--border-neon);
 }
 
-.hud-toggle-pill.alert-pill:hover {
-  border-color: rgba(255, 51, 102, 0.5);
+.hud-toggle-pill.alert-active {
+  border-color: rgba(255, 51, 102, 0.75);
+  background: rgba(45, 8, 18, 0.85);
+  box-shadow: 0 0 14px rgba(255, 51, 102, 0.4);
 }
 
 .hud-toggle-labels {
@@ -444,18 +446,22 @@ html, body {
   color: var(--text-dim);
 }
 
-/* Custom Cyber Toggle Switch */
+/* Custom Cyber Liquid Toggle Switch (High Precision Geometry - Zero Overflow) */
 .switch-control {
   position: relative;
-  display: inline-block;
-  width: 34px;
-  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  width: 38px;
+  height: 20px;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .switch-control input {
   opacity: 0;
   width: 0;
   height: 0;
+  position: absolute;
 }
 
 .slider {
@@ -465,10 +471,10 @@ html, body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #1e293b;
-  transition: .3s;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(15, 23, 42, 0.85);
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .slider:before {
@@ -476,32 +482,42 @@ html, body {
   content: "";
   height: 12px;
   width: 12px;
-  left: 2px;
-  bottom: 2px;
+  left: 3px;
+  top: 2.5px;
   background-color: #94a3b8;
-  transition: .3s;
   border-radius: 50%;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
+.switch-control:hover .slider {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Checked State (Neon Green - Fits perfectly inside capsule) */
 input:checked + .slider {
-  background-color: var(--emerald-dark);
+  background-color: rgba(0, 85, 43, 0.75);
   border-color: var(--neon-green);
-  box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
 }
 
 input:checked + .slider:before {
-  transform: translateX(16px);
+  transform: translateX(18px);
   background-color: var(--neon-green);
+  box-shadow: 0 0 8px var(--neon-green);
 }
 
+/* Alert / Test Switch Checked State (Amber/Red) */
 .alert-switch input:checked + .slider {
-  background-color: var(--alert-red-faint);
+  background-color: rgba(102, 17, 38, 0.8);
   border-color: var(--alert-red);
-  box-shadow: 0 0 8px var(--alert-red-glow);
+  box-shadow: 0 0 10px var(--alert-red-glow);
 }
 
 .alert-switch input:checked + .slider:before {
+  transform: translateX(18px);
   background-color: var(--alert-red);
+  box-shadow: 0 0 8px var(--alert-red);
 }
 
 /* -------------------------------------------------------------
@@ -614,11 +630,19 @@ input:checked + .slider:before {
   letter-spacing: 0.8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid transparent;
+  border: 1px solid var(--border-neon);
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.18) 0%, rgba(0, 85, 43, 0.4) 100%);
+  color: var(--neon-green);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+.glow-button:hover {
+  background: var(--neon-green);
+  color: #030704;
+  box-shadow: 0 0 16px var(--neon-green-glow);
 }
 
 .primary-btn {

@@ -135,14 +135,14 @@
             </div>
           </div>
 
-          <!-- Switch 3: Tamper Demo -->
-          <div class="hud-toggle-pill alert-pill" title="Demonstrate Man-in-the-Middle 1-bit corruption detection">
+          <!-- Switch 3: Interactive Integrity Test Demo -->
+          <div class="hud-toggle-pill" id="tamperPill" title="Simulate Man-in-the-Middle 1-bit packet modification for demonstration">
             <label class="switch-control alert-switch">
               <input type="checkbox" id="tamperToggle" onchange="handleTamperToggle(this)">
               <span class="slider"></span>
             </label>
             <div class="hud-toggle-labels">
-              <span class="toggle-name" id="tamperTitle">&#x2694;&#xFE0F; TAMPER</span>
+              <span class="toggle-name" id="tamperTitle">&#x1F9EA; INTEGRITY TEST</span>
               <span class="toggle-sub" id="tamperDesc">Clean Stream</span>
             </div>
           </div>
@@ -535,7 +535,7 @@
               <label class="setting-label">CURRENT DOWNLOAD DIRECTORY</label>
               <div class="dir-input-group">
                 <input type="text" class="cyber-input dir-input" id="settingsDownloadDirInput" readonly>
-                <button class="glow-button mini-btn" onclick="browseDownloadDirectory()">&#x1F4C2; BROWSE...</button>
+                <button class="glow-button primary-btn mini-btn" onclick="browseDownloadDirectory()">&#x1F4C2; BROWSE...</button>
                 <button class="ghost-btn mini-ghost" onclick="openDownloadsFolder()">&#x1F4C1; OPEN</button>
               </div>
             </div>
