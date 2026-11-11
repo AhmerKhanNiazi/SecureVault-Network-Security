@@ -273,7 +273,8 @@ node.on_file_complete = lambda filename, path, is_intact, sha: sync_broadcast("f
     "filename": filename,
     "path": path,
     "is_intact": is_intact,
-    "sha256": sha
+    "sha256": sha,
+    "filesize": os.path.getsize(path) if (path and os.path.exists(path)) else 0
 })
 
 node.on_packet_event = lambda direction, ftype, mode, length, raw_hex: sync_broadcast("packet_telemetry", {

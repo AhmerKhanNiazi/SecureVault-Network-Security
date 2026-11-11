@@ -17,6 +17,16 @@ let discoveredPeersMap = {};
 
 // Active Incoming Transfer Context
 let activeIncomingProposal = null;
+let stagedFilePath = null;
+
+function sendStagedFile() {
+  if (stagedFilePath) {
+    sendToBackend('send_file', { filepath: stagedFilePath });
+    const card = document.getElementById('stagedFileCard');
+    if (card) card.style.display = 'none';
+    stagedFilePath = null;
+  }
+}
 
 // Downloaded Files History
 let downloadedFilesHistory = [];
@@ -604,7 +614,7 @@ function addDownloadedFileRecord(data) {
       <div style="font-weight: 600; font-family: var(--font-mono);">${escapeHtml(data.filename)}</div>
       <div style="font-size: 10px; color: var(--text-dim);">${escapeHtml(data.path)}</div>
     </td>
-    <td><span style="font-family: var(--font-mono); color: var(--electric-cyan);">${formatBytes(32000)}</span></td>
+    <td><span style="font-family: var(--font-mono); color: var(--electric-cyan);">${formatBytes(data.filesize || 0)}</span></td>
     <td>
       <span class="status-badge-verified">
         ${data.is_intact ? '&#x2705; SHA-256 MATCH' : '&#x26A0;&#xFE0F; INTEGRITY BREACH'}
