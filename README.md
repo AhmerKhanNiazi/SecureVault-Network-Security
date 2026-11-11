@@ -1,22 +1,28 @@
-# 🛡️ SecureVault LAN — Hybrid Cryptographic Transport & Visual Protocol Suite
+# 🛡️ SecureVault LAN v3.0 Enterprise — Hybrid Cryptographic Transport & AirShare Security Suite
 
-> **Subject:** Network Security (5th Semester OEL / Lab Project)  
-> **Platform:** Windows Native (Python 3.11) • Zero Simulation • 100% Real TCP Sockets  
-> **UI Aesthetic:** Cyber-Green Liquidmorphism (Hyper-Fluid v3.0) + Native Desktop GUI (.exe)
+> **Course:** Network Security (5th Semester Final Project / Open-Ended Lab)  
+> **Platform:** Windows Native (Python 3.11) • 100% Real Sockets (Zero Simulation)  
+> **Aesthetic:** Hyper-Fluid Obsidian Cyber-Liquidmorphism (6 Dedicated Tabs)  
+> **Repository:** [AhmerKhanNiazi/SecureVault-Network-Security](https://github.com/AhmerKhanNiazi/SecureVault-Network-Security)
 
 ---
 
 ## 📌 1. Project Overview & Problem Statement
 
-In local area networks (LANs), standard communication and file transfers (like unencrypted FTP, HTTP, or raw TCP sockets) transmit data in cleartext. Any adversary on the same Wi-Fi or subnet running packet sniffers like **Wireshark** can capture sensitive conversations and steal confidential files.
+In standard Local Area Networks (LANs), everyday communication protocols (like HTTP, FTP, or raw TCP sockets) transmit traffic in plaintext. Any passive adversary running packet sniffers like **Wireshark** on the same Wi-Fi or Ethernet switch can intercept confidential files, read credentials, or execute Man-in-the-Middle (MITM) tampering.
 
-**SecureVault LAN** solves this problem by creating an authenticated, end-to-end encrypted transport channel directly between two Windows PCs over Wi-Fi or Ethernet. It combines **Asymmetric Cryptography (RSA-2048)** for secure key negotiation, **Symmetric Authenticated Cryptography (AES-256-GCM)** for ultra-fast payload encryption, and **Cryptographic Hash Functions (SHA-256)** for tamper-proof file integrity verification.
+**SecureVault LAN v3.0** is an enterprise-grade cryptographic workstation that solves this problem. It establishes a hardware-accelerated, authenticated, end-to-end encrypted transport channel directly between Windows machines. It combines:
+* **Asymmetric Cryptography (RSA-2048)** with OAEP-SHA256 padding for initial key negotiation.
+* **Symmetric Authenticated Cryptography (AES-256-GCM)** for streaming payload encryption.
+* **Rolling Cryptographic Hash (SHA-256)** computed chunk-by-chunk on-the-fly for tamper-proof data verification.
+* **Zero-Config LAN Peer Mesh (AirShare on UDP 5555)** for zero-setup automatic peer discovery.
+* **Multi-Tier Malware Shield** integrating Windows AMSI, EICAR pattern detection, executable blocklists, and an isolated Quarantine Vault.
 
 ---
 
 ## 🔒 2. Cryptographic Architecture
 
-SecureVault implements an industry-standard **Hybrid Cryptosystem** (similar to TLS/HTTPS and SSH):
+SecureVault implements an industry-standard **Hybrid Cryptosystem** (analogous to modern TLS 1.3 and SSHv2):
 
 ```
 +-----------------------------------------------------------------------------------------+
@@ -24,10 +30,10 @@ SecureVault implements an industry-standard **Hybrid Cryptosystem** (similar to 
 |                                                                                         |
 |      CLIENT NODE                                                      SERVER NODE       |
 |           |                                                                |            |
-|           |   1. TCP 3-Way Handshake Connection (SYN -> SYN-ACK -> ACK)   |            |
+|           |   1. TCP 3-Way Handshake (SYN -> SYN-ACK -> ACK)              |            |
 |           |<==============================================================>|            |
 |           |                                                                |            |
-|           |   2. Server RSA-2048 Public Key (Plaintext Frame)              |            |
+|           |   2. Server RSA-2048 Ephemeral Public Key (PEM Frame)          |            |
 |           |<---------------------------------------------------------------|            |
 |           |                                                                |            |
 |    [Generates fresh]                                                       |            |
@@ -44,70 +50,121 @@ SecureVault implements an industry-standard **Hybrid Cryptosystem** (similar to 
 |           |                                                                |            |
 |  ========= SECURE CHANNEL ESTABLISHED (SESSION KEYS MATCH 100%) ======================  |
 |           |                                                                |            |
-|           |   5. AES-256-GCM Encrypted Messages & 32KB File Chunks         |            |
+|           |   5. AES-256-GCM Encrypted Messages & 32KB Stream Chunks       |            |
 |           |<==============================================================>|            |
-|           |   (Each packet guarded with 12-byte Nonce + 128-bit Auth Tag)  |            |
+|           |   (Each packet guarded with 12-byte Nonce + 16-byte Auth Tag)  |            |
 |           |                                                                |            |
-|           |   6. SHA-256 File End-to-End Integrity Verification Checksum   |            |
+|           |   6. Rolling SHA-256 Checksum Verified Post-Reconstruction     |            |
 |           |<==============================================================>|            |
 +-----------------------------------------------------------------------------------------+
 ```
 
-### Protocol Specifications:
-1. **Key Exchange:** RSA-2048 using **OAEP (Optimal Asymmetric Encryption Padding)** with SHA-256 and MGF1.
-2. **Data Cipher:** **AES-256-GCM (Galois/Counter Mode)** — provides both Confidentiality and Authenticity (AEAD). Each packet has a unique 12-byte cryptographically secure nonce and a 16-byte (128-bit) authentication tag.
-3. **Tamper Detection:** If even a single bit in ciphertext or auth tag is modified in transit (MITM attack), AES-GCM immediately throws an `InvalidTag` exception and the packet is dropped.
-4. **File Integrity:** Full **SHA-256 cryptographic digest** computed prior to transmission and re-verified post-reconstruction.
+### Cryptographic Standards:
+1. **Asymmetric Key Exchange:** RSA-2048 using **OAEP (Optimal Asymmetric Encryption Padding)** with SHA-256 and MGF1 (immune to Bleichenbacher padding oracle attacks).
+2. **Symmetric Stream Cipher:** **AES-256-GCM (Galois/Counter Mode)** — Authenticated Encryption with Associated Data (AEAD). Guarantees both Confidentiality and Authenticity.
+3. **Data Integrity:** **Rolling SHA-256 Stream Hash** — updated dynamically chunk-by-chunk during transmission. Zero pre-hashing latency, even on 10GB+ video files.
+4. **Replay Protection:** 12-byte unique cryptographic Nonce regenerated for every transmitted packet.
 5. **Custom Binary Framing:** Compact 9-byte header (`SV` Magic, Security Mode, Frame Type, Nonce Length, Payload Length).
 
 ---
 
-## 🎨 3. Visual & HCI Experience (Liquidmorphism v3.0)
+## 🗂️ 3. Enterprise 6-Tab Multi-Page Architecture
 
-1. **Interactive Liquid Glass Refraction:** As you move the mouse across the panels, a soft liquid neon refraction orb illuminates the frosted glass from behind.
-2. **Living 60FPS Energy Pipeline Canvas:** Dual undulating electromagnetic sine waves (Neon Green & Electric Cyan) flow along the cable with pulsing radar node auras.
-3. **Cyber Equalizer Spectrum:** Real-time animated frequency scanner bars in the telemetry HUD.
-4. **Rotating Reactor Shield Logo:** Dynamic 360-degree rotating light beam behind the header shield badge.
-5. **Cryptographic Glitch Decryption:** Negotiated session key fingerprints scramble random hex characters (`8F 2A E1 99...`) before locking in.
-6. **Liquid Wave File Progress:** Dynamic animated fluid wave progress fill for confidential file streaming.
-7. **Live Security Audit Terminal:** Color-coded badges for real-time packet telemetry (`[TX]`, `[RX]`, `[CRYPTO]`, `[ALERT]`).
+SecureVault LAN v3.0 features a modern liquidmorphic cyber interface structured across 6 dedicated tabs:
+
+1. **📡 Radar & Devices (AirShare Mesh):**
+   * Automatic UDP 5555 broadcast beacon discovering all online PCs on the subnet.
+   * Responsive device mesh cards with hostname, IP, port, latency ring, and 1-click connect.
+   * Server host controller with dynamic port collision avoidance.
+
+2. **📦 Transfer Hub & Interactive Consent:**
+   * **Drag & Drop Dropzone:** Native Windows file picker integration (100% bypasses browser `C:\fakepath` restrictions).
+   * **Interactive Transfer Consent:** Prompts receiver with an illuminated banner: `[ Accept ]`, `[ Save As... ]`, or `[ Decline ]`.
+   * **Active Wave Progress Vessel:** Displays real-time streaming speed (MB/s), ETA, and clamped % progress.
+   * **Downloaded Files Manager:** Shows received files with direct `[ Open File ]`, `[ Show in Folder ]`, and `[ Save As ]` actions.
+
+3. **💬 Secure Messenger:**
+   * End-to-end encrypted chat timeline with timestamps and security badges.
+   * Instant toggle between encrypted ciphertext and Wireshark cleartext mode.
+
+4. **🛡️ Malware Shield & Security Center:**
+   * Integrated Windows AMSI buffer inspection.
+   * Signature detection intercepting EICAR antivirus test patterns.
+   * Extension deception traps blocking double extensions (e.g. `invoice.pdf.exe`) and dangerous scripts (`.bat`, `.ps1`, `.vbs`).
+   * MZ header inspection detecting Windows PE executables disguised as image/video extensions.
+   * Isolated Quarantine Vault table with one-click folder exploration.
+
+5. **📊 Protocol & Packet Inspector:**
+   * Real-time Wireshark-grade frame dissector.
+   * Categorical filtering (`ALL`, `HANDSHAKE`, `TEXT`, `FILES`, `ALERTS`) with live hex dump previews.
+
+6. **⚙️ System Settings:**
+   * Configurable download directories with native Windows folder browsing.
+   * Transfer consent prompts toggle (Prompt Every Time vs Auto-Accept).
 
 ---
 
-## 🦈 4. Wireshark Live Viva Demonstration
+## 🚀 4. How to Run
 
-The top right of the HUD includes a **Live Wireshark Hero Toggle Switch**:
+### Option 1: Native Desktop Launcher (Recommended)
+```powershell
+# In project directory:
+run_app.bat
+```
+* Automatically finds an open port (defaulting to 8082 to avoid background server conflicts), starts the backend, and opens the native standalone window.
 
-* **SECURE MODE (Default):**
-  - All chat and file frames are encrypted with AES-256-GCM.
-  - In Wireshark (Filter: `tcp.port == 5500`), data payload appears as pure high-entropy pseudorandom ciphertext bytes (e.g. `9f a4 c1 3b...`).
-* **PLAINTEXT DEMO MODE (For Teacher Viva):**
-  - Switch the toggle to Plaintext.
-  - Send a message (e.g. `"CONFIDENTIAL EXAM PAPER"`).
-  - Inspect the TCP stream in Wireshark ➔ The cleartext ASCII characters are 100% visible in the packet stream, demonstrating what an attacker sees without cryptography!
+### Option 2: Automated Dual Instance Test (Single PC)
+```powershell
+run_two_instances_test.bat
+```
+* Automatically spawns Server (Port 5500, UI: 8082) and Client (connecting to 127.0.0.1:5500, UI: 8083) in side-by-side native windows for instant local testing.
+
+### Option 3: Pre-Compiled Standalone Windows Executable (.exe)
+* Extract `SecureVault_LAN_v3.0_Windows_x64.zip` and run `SecureVault_LAN.exe`.
+* To recompile from source, run:
+```powershell
+build_exe.bat
+```
 
 ---
 
-## 🚀 5. How to Run
+## 🧪 5. Automated Verification Suite
 
-### Mode 1: Cyber-Liquid Master App (Recommended for Viva)
-* Single Instance: Double-click [`run_app.bat`](run_app.bat)
-* Dual Instance Test (Local Client + Server): Double-click [`run_two_instances_test.bat`](run_two_instances_test.bat)
+Run all 17 automated unit and integration tests:
+```powershell
+run_tests.bat
+```
 
-### Mode 2: Compiled Standalone Windows Executable (.exe)
-* Standalone Executable: `dist\SecureVault_LAN\SecureVault_LAN.exe`
-* Dual Desktop Test: Double-click [`run_two_desktop_instances.bat`](run_two_desktop_instances.bat)
+```text
+test_dynamic_download_dir_and_incoming_callback ... ok
+test_aes_gcm_encrypt_decrypt .................... ok
+test_protocol_frame_pack_unpack ................ ok
+test_rsa_handshake_and_key_exchange ............ ok
+test_sha256_file_integrity ..................... ok
+test_tamper_detection_integrity ................ ok
+test_full_e2e_secure_handshake_and_transfer .... ok
+test_lan_discovery_broadcast_and_receipt ....... ok
+test_multi_file_manifest_and_selective_pull .... ok
+test_tamper_injection_demo_toggle .............. ok
+test_transfer_concurrency_lock ................. ok
+test_bypass_demo_toggle ........................ ok
+test_clean_file_passes ......................... ok
+test_dangerous_extension_blocking .............. ok
+test_double_extension_deception_trap ........... ok
+test_eicar_signature_detection_and_quarantine .. ok
+test_header_pe_disguise_detection .............. ok
 
-### Mode 3: Automated Test Suite (100% Pass)
-* Double-click [`run_tests.bat`](run_tests.bat) to execute unit and E2E cryptographic verification.
+Ran 17 tests in 3.822s — OK (100% Success Rate)
+```
 
 ---
 
 ## 🎓 6. Academic Viva Defense Cheat Sheet
 
-| Question | Answer |
-|:---|:---|
-| **Why Hybrid Cryptography?** | RSA is computationally expensive for large data; AES is fast but requires pre-shared keys. Hybrid uses RSA once to securely share an ephemeral AES session key, then AES encrypts all high-speed traffic. |
-| **Why AES-GCM over AES-CBC?** | CBC only provides confidentiality and is vulnerable to padding oracle attacks. GCM provides Authenticated Encryption (AEAD) with hardware acceleration and built-in tamper detection via GMAC auth tags. |
-| **Why OAEP padding for RSA?** | PKCS#1 v1.5 padding is vulnerable to Bleichenbacher chosen-ciphertext attacks. OAEP adds randomness and hashing, making RSA semantically secure against adaptive chosen-ciphertext attacks (IND-CCA2). |
-| **How does Wireshark demo prove security?** | Toggling to Plaintext shows readable text in Wireshark TCP stream; toggling to Secure shows high-entropy ciphertext that cannot be decrypted without the ephemeral session key. |
+| Question | Core Defense Answer |
+| :--- | :--- |
+| **Why Hybrid Cryptography?** | RSA is mathematically heavy for bulk streaming; AES is fast but requires a shared secret. Hybrid cryptography uses RSA-2048 once during the handshake to exchange an ephemeral AES-256 key, then AES streams bulk data at wire speed. |
+| **Why AES-GCM over AES-CBC?** | CBC only provides confidentiality and is susceptible to padding oracle attacks. GCM provides Authenticated Encryption (AEAD) with hardware Galois field acceleration and tamper resistance via 128-bit GMAC tags. |
+| **Why OAEP padding for RSA?** | PKCS#1 v1.5 padding is vulnerable to Bleichenbacher chosen-ciphertext attacks. OAEP integrates dual random hashing (SHA-256 + MGF1), proving semantically secure against IND-CCA2 adversaries. |
+| **How does Wireshark demo prove security?** | Toggling to Plaintext shows readable text in Wireshark TCP streams; toggling to Secure shows high-entropy ciphertext that cannot be decrypted without the ephemeral session key. |
+| **How is MITM Tampering Detected?** | Flipping even 1 bit of ciphertext in transit causes AES-GCM tag authentication to fail, triggering an immediate drop and integrity alarm. |
